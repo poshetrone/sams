@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 
 export interface ContractInput {
   id?: string
@@ -19,8 +19,11 @@ export interface ContractInput {
 type Result = { ok: boolean; error?: string }
 
 export async function saveContract(input: ContractInput): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
   if (!input.company.trim()) return { ok: false, error: "Nom d'entreprise requis" }
 
   const admin = createServiceClient()
@@ -47,8 +50,11 @@ export async function saveContract(input: ContractInput): Promise<Result> {
 }
 
 export async function deleteContract(id: string): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
   const admin = createServiceClient()
   const { error } = await admin.from('contracts').delete().eq('id', id)
   if (error) return { ok: false, error: error.message }

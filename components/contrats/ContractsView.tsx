@@ -59,7 +59,7 @@ function CompanyLogo({ logo, size = 52 }: { logo?: string | null; size?: number 
 
 export default function ContractsView({ contracts }: { contracts: Contract[] }) {
   const router = useRouter()
-  const { search } = useApp()
+  const { search, isAdmin } = useApp()
   const [modal, setModal] = useState<Contract | 'new' | null>(null)
 
   const list = contracts.filter((c) => !search || c.company.toLowerCase().includes(search.toLowerCase()))
@@ -79,7 +79,7 @@ export default function ContractsView({ contracts }: { contracts: Contract[] }) 
           <div style={{ fontSize: 13, color: 'var(--ink-400)' }}>
             Revenu hebdomadaire actif : <b style={{ color: 'var(--gold-300)', fontFamily: 'var(--font-display)', fontSize: 17 }}>{fmtMoney(totalActif)}</b>
           </div>
-          <button className="btn btn-gold" onClick={() => setModal('new')}><Icons.plus size={16} /> Ajouter un contrat</button>
+          {isAdmin && <button className="btn btn-gold" onClick={() => setModal('new')}><Icons.plus size={16} /> Ajouter un contrat</button>}
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function ContractsView({ contracts }: { contracts: Contract[] }) 
           const m = MUTUELLES[c.type as 'standard' | 'premium']
           const premium = c.type === 'premium'
           return (
-            <Card key={c.id} className="contract-card" onClick={() => setModal(c)}>
+            <Card key={c.id} className="contract-card" onClick={isAdmin ? () => setModal(c) : undefined} style={{ cursor: isAdmin ? 'pointer' : 'default' }}>
               <div className="cc-head">
                 <CompanyLogo logo={c.logo} />
                 <div style={{ flex: 1, minWidth: 0 }}>

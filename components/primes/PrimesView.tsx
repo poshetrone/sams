@@ -105,8 +105,8 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
                         value={(+m.bonus || 0) === 0 ? '' : Number(m.bonus).toLocaleString('fr-FR')}
                         onChange={(e) => changeBonus(m.id, +e.target.value.replace(/\D/g, '') || 0)}
                         onBlur={() => persistBonus(m)}
-                        placeholder="0"
-                        disabled={!canEdit}
+                        placeholder={canEdit ? '0' : '—'}
+                        readOnly={!canEdit}
                       />
                     </div>
                   </td>
