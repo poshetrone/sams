@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth'
 
 export interface FormationInput {
   key?: string
@@ -16,8 +16,11 @@ const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 20)
 
 export async function saveFormation(input: FormationInput, existingKeys: string[]): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
   if (!input.label.trim()) return { ok: false, error: 'Nom requis' }
   const admin = createServiceClient()
 
@@ -43,8 +46,11 @@ export async function saveFormation(input: FormationInput, existingKeys: string[
 }
 
 export async function deleteFormation(key: string): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
   const admin = createServiceClient()
   const { error } = await admin.from('formations').delete().eq('key', key)
   if (error) return { ok: false, error: error.message }

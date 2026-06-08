@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requirePerm, getCurrentMember } from '@/lib/auth'
+import { requirePerm } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 
 export interface MemberInput {
@@ -158,8 +158,11 @@ export async function addContractPhoto(memberId: string, src: string): Promise<R
 
 /* ---------- Formations (validation par membre) ---------- */
 export async function updateMemberFormations(id: string, formations: string[]): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try {
+    await requirePerm('manageStaff')
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
   const admin = createServiceClient()
   const { error } = await admin.from('members').update({ formations }).eq('id', id)
   if (error) return { ok: false, error: error.message }

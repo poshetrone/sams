@@ -53,7 +53,7 @@ Le code utilise `window.location.origin` pour le `redirectTo`, donc le callback 
 
 - Schéma : `supabase_schema.sql` (déjà exécuté).
 - Temps réel (optionnel) : exécuter `supabase_realtime.sql` (active Realtime sur calendrier/trombi/tombola/fusillades).
-- Données de démo (optionnel) : `node scripts/seed-all.mjs` en local (utilise `.env.local`).
+- **Base vierge pour la production** : exécuter `supabase_reset.sql` → vide toutes les données de test et ne conserve que les accès Direction (Titanium + Poshetrone). *(Il n'y a plus de script de seed de démo : `seed-all.mjs` a été retiré.)*
 - Rattacher un compte Discord à un membre : via l'écran **Gestion des accès**, ou `node scripts/seed-member.mjs <discord_id> <pseudo> [grade] [nom]`.
 
 ## 5. Notes techniques
