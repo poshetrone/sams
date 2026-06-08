@@ -5,24 +5,41 @@ import { Icons, Laurel } from '@/components/Icons'
 
 /** Écran de connexion SAMS — fidèle au proto, branché sur Discord OAuth (Supabase). */
 export default function LoginScreen() {
+  // Client Supabase initialisé une seule fois (avant tout clic) — évite la
+  // course à l'init qui obligeait à cliquer deux fois.
+  const [supabase] = useState(() => createClient())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const signIn = async () => {
+    if (loading) return
     setLoading(true)
     setError(null)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) {
-      setError(error.message)
+    try {
+      // On pilote la redirection nous-mêmes (skipBrowserRedirect) pour qu'un
+      // seul clic suffise, sans dépendre du timing interne du SDK.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: true,
+        },
+      })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        setError('URL de connexion Discord indisponible.')
+        setLoading(false)
+      }
+    } catch (e) {
+      setError((e as Error).message || 'Erreur de connexion')
       setLoading(false)
     }
-    // En cas de succès, le navigateur est redirigé vers Discord.
   }
 
   return (

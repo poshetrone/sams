@@ -133,6 +133,29 @@ export async function resetPrimes(): Promise<Result> {
   return { ok: true }
 }
 
+/* ---------- Contrat : photo signée rattachée à l'employé ---------- */
+export async function addContractPhoto(memberId: string, src: string): Promise<Result> {
+  try {
+    await requirePerm('manageStaff')
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+  if (!src) return { ok: false, error: 'Image requise' }
+  const admin = createServiceClient()
+  const { data: m } = await admin.from('members').select('contract_photos').eq('id', memberId).maybeSingle()
+  if (!m) return { ok: false, error: 'Employé introuvable' }
+  const stamp = () => {
+    const d = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
+  }
+  const photos = [...((m.contract_photos as { id: string; src: string; date: string }[]) || []), { id: 'cp' + Date.now(), src, date: stamp() }]
+  const { error } = await admin.from('members').update({ contract_photos: photos }).eq('id', memberId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/effectifs')
+  return { ok: true }
+}
+
 /* ---------- Formations (validation par membre) ---------- */
 export async function updateMemberFormations(id: string, formations: string[]): Promise<Result> {
   const me = await getCurrentMember()

@@ -5,6 +5,7 @@ import { Icons } from '@/components/Icons'
 import { Badge, GradePill, Card } from '@/components/ui'
 import Modal from '@/components/Modal'
 import EmployeeModal from './EmployeeModal'
+import ContractEditor from './ContractEditor'
 import { GRADES, POLES, MEMBER_STATUS, type GradeKey } from '@/lib/constants'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
@@ -32,6 +33,7 @@ export default function EffectifsView({ members }: { members: Member[] }) {
   const { can, search } = useApp()
   const isAdmin = can('manageStaff')
   const [modal, setModal] = useState<'new' | { employee: Member } | null>(null)
+  const [contract, setContract] = useState(false)
   const [confirmDel, setConfirmDel] = useState<Member | null>(null)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -65,9 +67,11 @@ export default function EffectifsView({ members }: { members: Member[] }) {
           <b style={{ color: 'var(--ink-100)' }}>{members.length}</b> employés enregistrés
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-          <button className="btn btn-ghost" onClick={() => flash('Générateur de contrat — disponible à l’étape Documents')}>
-            <Icons.doc size={15} /> Générer un contrat
-          </button>
+          {isAdmin && (
+            <button className="btn btn-ghost" onClick={() => setContract(true)}>
+              <Icons.doc size={15} /> Générer un contrat
+            </button>
+          )}
           {isAdmin && (
             <button className="btn btn-gold" onClick={() => setModal('new')}>
               <Icons.plus size={16} /> Ajouter un employé
@@ -174,6 +178,8 @@ export default function EffectifsView({ members }: { members: Member[] }) {
           onSaved={() => router.refresh()}
         />
       )}
+
+      {contract && <ContractEditor employees={members} onClose={() => setContract(false)} onSavedPhoto={() => router.refresh()} />}
 
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(null)} title="Supprimer l'employé" icon={<Icons.trash size={20} />}>

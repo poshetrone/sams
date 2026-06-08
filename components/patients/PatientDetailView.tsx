@@ -15,6 +15,7 @@ import PatientBilling from './PatientBilling'
 import PatientModal from './PatientModal'
 import { AppointmentModal, VitalsModal, HistoryModal, ImagingModal } from './modals'
 import { AppointmentCard, DossierSummary } from './cards'
+import DocViewer from '@/components/documents/DocViewer'
 import type { Patient, PatientPatch, Appointment, VitalsRecord, HistoryEntry, PatientImage, PatientDoc } from '@/lib/types'
 
 const TABS = [
@@ -51,6 +52,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
   const [ant, setAnt] = useState(initialPatient.antecedents || '')
   const [imgFilter, setImgFilter] = useState('tous')
   const [imgLightbox, setImgLightbox] = useState<string | null>(null)
+  const [viewDoc, setViewDoc] = useState<PatientDoc | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [confirmDeath, setConfirmDeath] = useState(false)
@@ -315,7 +317,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                       <a className="icon-btn" style={{ width: 34, height: 34 }} href={d.file} download={d.fileName} title="Télécharger"><Icons.download size={16} /></a>
                     </>
                   ) : (
-                    <button className="icon-btn" style={{ width: 34, height: 34 }} title="Aperçu (Documents)" onClick={goDocuments}><Icons.eye size={16} /></button>
+                    <button className="icon-btn" style={{ width: 34, height: 34 }} title="Aperçu" onClick={() => setViewDoc(d)}><Icons.eye size={16} /></button>
                   )}
                   {canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delDoc(d.id)}><Icons.trash size={15} /></div>}
                 </div>
@@ -362,6 +364,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {imgLightbox && <div className="modal-overlay" onClick={() => setImgLightbox(null)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={imgLightbox} alt="" style={{ maxWidth: '92vw', maxHeight: '90vh', borderRadius: 10, boxShadow: 'var(--shadow-pop)' }} onClick={(e) => e.stopPropagation()} /></div>}
       {rdvCard && <AppointmentCard patient={patient} appt={rdvCard} onClose={() => setRdvCard(null)} />}
       {editOpen && <PatientModal patient={patient} onClose={() => setEditOpen(false)} onSaved={() => router.refresh()} />}
+      {viewDoc && <DocViewer type={viewDoc.type} patient={patient} onClose={() => setViewDoc(null)} />}
 
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(false)} title="Supprimer le dossier" icon={<Icons.trash size={20} />}>

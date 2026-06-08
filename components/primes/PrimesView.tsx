@@ -92,12 +92,12 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
               const rowTotal = (m.prime ? g?.prime ?? 0 : 0) + (+m.bonus || 0)
               return (
                 <tr key={m.id}>
-                  <td onClick={() => toggle(m)} style={{ cursor: canEdit ? 'pointer' : 'default' }}>
+                  <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }}>
                     <div className={`cbx ${m.prime ? 'on' : ''}`} style={{ width: 20, height: 20 }}>{m.prime && <Icons.check size={14} style={{ color: '#1a1206' }} />}</div>
                   </td>
-                  <td onClick={() => toggle(m)} style={{ cursor: canEdit ? 'pointer' : 'default' }}><div className="person"><div className="av-sm">{initialsOf(m.name)}</div><div className="pn"><b>{m.name}</b><span>{m.matricule}</span></div></div></td>
+                  <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }}><div className="person"><div className="av-sm">{initialsOf(m.name)}</div><div className="pn"><b>{m.name}</b><span>{m.matricule}</span></div></div></td>
                   <td><GradePill grade={m.grade} /></td>
-                  <td onClick={() => toggle(m)} style={{ cursor: canEdit ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: m.prime ? 'var(--gold-300)' : 'var(--ink-500)' }}>{m.prime ? fmtMoney(g?.prime ?? 0) : '—'}</td>
+                  <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: m.prime ? 'var(--gold-300)' : 'var(--ink-500)' }}>{m.prime ? fmtMoney(g?.prime ?? 0) : '—'}</td>
                   <td>
                     <div className="bonus-input">
                       <span>$</span>

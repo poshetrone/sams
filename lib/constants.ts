@@ -214,8 +214,8 @@ export const NAV: NavGroup[] = [
     { key: 'formations', label: 'Formations',        icon: 'medal',     route: '/formations' },
     { key: 'primes',     label: 'Primes',            icon: 'cash',      route: '/primes' },
     { key: 'tombola',    label: 'Tombola',           icon: 'medal',     route: '/tombola' },
-    { key: 'audit',      label: "Journal d'audit",   icon: 'clock',     route: '/audit' },
-    { key: 'stats',      label: 'Statistiques',      icon: 'stats',     route: '/stats' },
+    { key: 'audit',      label: "Journal d'audit",   icon: 'clock',     route: '/audit', admin: true },
+    { key: 'stats',      label: 'Statistiques',      icon: 'stats',     route: '/stats', admin: true },
   ]},
 ]
 
