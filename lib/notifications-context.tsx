@@ -37,26 +37,49 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notif[]>([])
   const [toast, setToast] = useState<Notif | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const ctxRef = useRef<AudioContext | null>(null)
 
-  // Prépare l'audio + déverrouille la lecture au 1er geste utilisateur
-  // (les navigateurs bloquent l'autoplay tant qu'aucune interaction n'a eu lieu).
+  // Son via Web Audio API (oscillateur) — pas de fichier à servir, plus fiable.
+  // Le contexte audio est « débloqué » (resume) à chaque interaction utilisateur
+  // (les navigateurs bloquent l'audio tant qu'aucun geste n'a eu lieu).
   useEffect(() => {
-    const a = new Audio('/sounds/alert.wav')
-    a.volume = 0.5
-    audioRef.current = a
-    const unlock = () => {
-      a.play().then(() => { a.pause(); a.currentTime = 0 }).catch(() => {})
-      window.removeEventListener('pointerdown', unlock)
-      window.removeEventListener('keydown', unlock)
-    }
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (AC) ctxRef.current = new AC()
+    const unlock = () => { ctxRef.current?.resume?.().catch(() => {}) }
     window.addEventListener('pointerdown', unlock)
     window.addEventListener('keydown', unlock)
     return () => {
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('keydown', unlock)
+      ctxRef.current?.close?.().catch(() => {})
     }
   }, [])
+
+  const playBeep = () => {
+    const ctx = ctxRef.current
+    if (!ctx) return
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {})
+      console.log('[notif] contexte audio suspendu — clique une fois dans la page pour activer le son')
+    }
+    try {
+      const now = ctx.currentTime
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.connect(g)
+      g.connect(ctx.destination)
+      o.type = 'sine'
+      o.frequency.setValueAtTime(784, now)        // bip 1
+      o.frequency.setValueAtTime(1047, now + 0.12) // bip 2
+      g.gain.setValueAtTime(0.0001, now)
+      g.gain.exponentialRampToValueAtTime(0.45, now + 0.02)
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.24)
+      o.start(now)
+      o.stop(now + 0.26)
+    } catch (e) {
+      console.log('[notif] beep impossible :', (e as Error)?.message)
+    }
+  }
 
   // Abonnement Realtime : nouvelle fusillade => notification (global, dans le shell)
   useEffect(() => {
@@ -76,8 +99,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev].slice(0, 50)))
         setToast(n)
         window.setTimeout(() => setToast((t) => (t && t.id === n.id ? null : t)), 6000)
-        const a = audioRef.current
-        if (a) { a.currentTime = 0; a.play().catch((e) => console.log('[notif] son bloqué (autoplay) :', e?.message)) }
+        playBeep()
       })
       .subscribe((status) => {
         console.log('[notif] statut abonnement Realtime fusillades :', status)
