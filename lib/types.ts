@@ -50,7 +50,7 @@ export interface Invoice {
 }
 export interface PatientDoc {
   id: string; type: string; title: string; date: string
-  author: string; state: string; file?: string; fileName?: string
+  author: string; state: string; file?: string; fileName?: string; mime?: string
 }
 
 export interface Patient {

@@ -7,7 +7,7 @@ import Modal from '@/components/Modal'
 import { STATUS_MAP, CARE_STATUS } from '@/lib/constants'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
-import { updatePatient, deletePatient, declareDeath } from '@/lib/actions/patients'
+import { updatePatient, deletePatient, declareDeath, importPatientDoc } from '@/lib/actions/patients'
 import { addCalendarEvent } from '@/lib/actions/calendar'
 import { handleImageInput } from '@/lib/image'
 import VitalsChart from './VitalsChart'
@@ -86,13 +86,16 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
 
   const onUploadDoc = (file?: File) => {
     if (!file) return
+    flash('Import du document…')
     const r = new FileReader()
-    r.onload = () => {
-      const doc: PatientDoc = { id: 'd' + Date.now(), type: 'import', title: file.name.replace(/\.[^.]+$/, ''), date: todayFull(), author: 'Import', state: 'importé', file: r.result as string, fileName: file.name }
-      persist({ docs: [doc, ...(patient.docs || [])] })
+    r.onload = async () => {
+      const res = await importPatientDoc(patient.id, file.name, file.type, r.result as string)
+      if (res.ok) { router.refresh(); flash('Document importé ✓') } else flash(res.error || "Erreur d'import")
     }
     r.readAsDataURL(file)
   }
+  const isImageDoc = (d: PatientDoc) =>
+    (d.mime || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(d.fileName || d.file || '')
   const onUploadImg = (file?: File) => {
     if (!file) return
     handleImageInput(file, (src) => saveImage({ id: 'im' + Date.now(), src, label: file.name.replace(/\.[^.]+$/, ''), type: 'Autre', date: todayFull() }))
@@ -313,7 +316,11 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                   <span className={`badge ${d.state === 'importé' ? 'info' : 'ok'}`}>{d.state}</span>
                   {d.file ? (
                     <>
-                      <a className="icon-btn" style={{ width: 34, height: 34 }} href={d.file} target="_blank" rel="noreferrer" title="Voir"><Icons.eye size={16} /></a>
+                      {isImageDoc(d) ? (
+                        <button className="icon-btn" style={{ width: 34, height: 34 }} title="Voir" onClick={() => setImgLightbox(d.file!)}><Icons.eye size={16} /></button>
+                      ) : (
+                        <a className="icon-btn" style={{ width: 34, height: 34 }} href={d.file} target="_blank" rel="noreferrer" title="Voir"><Icons.eye size={16} /></a>
+                      )}
                       <a className="icon-btn" style={{ width: 34, height: 34 }} href={d.file} download={d.fileName} title="Télécharger"><Icons.download size={16} /></a>
                     </>
                   ) : (

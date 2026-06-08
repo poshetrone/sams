@@ -22,6 +22,53 @@ export async function attachPatientDoc(patientId: string, entry: PatientDoc): Pr
   return { ok: true }
 }
 
+/**
+ * Importe un fichier (image/PDF) dans le bucket Storage `media` et rattache
+ * l'URL PUBLIQUE au dossier patient (plus de data URL inline).
+ */
+export async function importPatientDoc(
+  patientId: string,
+  fileName: string,
+  mime: string,
+  dataUrl: string
+): Promise<Result> {
+  const me = await getCurrentMember()
+  if (!me) return { ok: false, error: 'Non authentifié' }
+
+  const match = dataUrl.match(/^data:(.+?);base64,(.*)$/)
+  if (!match) return { ok: false, error: 'Fichier invalide' }
+  const contentType = mime || match[1] || 'application/octet-stream'
+  const buffer = Buffer.from(match[2], 'base64')
+
+  const admin = createServiceClient()
+  // S'assure que le bucket existe (idempotent ; ignore l'erreur « déjà créé »)
+  await admin.storage.createBucket('media', { public: true })
+
+  const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80)
+  const path = `patient-docs/${patientId}/${Date.now()}-${safe}`
+  const { error: upErr } = await admin.storage.from('media').upload(path, buffer, { contentType, upsert: true })
+  if (upErr) return { ok: false, error: upErr.message }
+  const { data: pub } = admin.storage.from('media').getPublicUrl(path)
+
+  const { data: p } = await admin.from('patients').select('docs, first_name, last_name').eq('id', patientId).maybeSingle()
+  if (!p) return { ok: false, error: 'Patient introuvable' }
+
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const today = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  const entry: PatientDoc = {
+    id: 'd' + Date.now(), type: 'import', title: fileName.replace(/\.[^.]+$/, ''),
+    date: today, author: me.name, state: 'importé', file: pub.publicUrl, fileName, mime: contentType,
+  }
+  const docs = [entry, ...((p.docs as PatientDoc[]) || [])]
+  const { error } = await admin.from('patients').update({ docs }).eq('id', patientId)
+  if (error) return { ok: false, error: error.message }
+
+  await logAudit(me, 'a importé un document —', `${p.first_name} ${p.last_name}`)
+  revalidatePath(`/patients/${patientId}`)
+  return { ok: true }
+}
+
 /** Ajoute (prepend) un cliché à l'imagerie du patient. */
 export async function attachPatientImage(patientId: string, image: PatientImage): Promise<Result> {
   const me = await getCurrentMember()
