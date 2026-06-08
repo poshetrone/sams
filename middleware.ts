@@ -13,6 +13,6 @@ export const config = {
      * - assets (public images)
      * - any file with an extension
      */
-    '/((?!_next/static|_next/image|favicon.ico|assets|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|assets|sounds|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|mp3|wav|ogg)$).*)',
   ],
 }

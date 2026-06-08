@@ -10,6 +10,7 @@ import { useApp } from '@/lib/app-context'
 import { createFusillade, updateFusillade, createPatientFromWounded, deleteFusillade, type FusilladeInput } from '@/lib/actions/fusillades'
 import { handleImageUpload } from '@/lib/image'
 import { useRealtime } from '@/lib/useRealtime'
+import { recentOwnFusillades } from '@/lib/notifications-context'
 import type { Fusillade, Wounded, Patient } from '@/lib/types'
 
 /* Carte GTA */
@@ -251,7 +252,10 @@ function NewFusilladeModal({ onClose, onSaved }: { onClose: () => void; onSaved:
     setBusy(true)
     const res = await createFusillade(f)
     setBusy(false)
-    if (res.ok) onSaved()
+    if (res.ok) {
+      if (res.id) recentOwnFusillades.add(res.id)
+      onSaved()
+    }
   }
   return (
     <Modal onClose={onClose} title="Nouvelle fusillade" icon={<Icons.target size={20} />} wide>

@@ -31,14 +31,14 @@ export async function createFusillade(input: FusilladeInput): Promise<Result> {
   if (!me) return { ok: false, error: 'Non authentifié' }
   if (!input.title.trim() || input.x == null) return { ok: false, error: 'Titre et position requis' }
   const admin = createServiceClient()
-  const { error } = await admin.from('fusillades').insert({
+  const { data, error } = await admin.from('fusillades').insert({
     title: input.title.trim(), zone: input.zone || null, x: input.x, y: input.y,
     severity: input.severity, status: 'en cours', time: stamp(), author: me.name, wounded: [],
-  })
+  }).select('id').single()
   if (error) return { ok: false, error: error.message }
   await logAudit(me, 'a déclenché une fusillade', input.zone || input.title.trim())
   revalidatePath('/fusillades')
-  return { ok: true }
+  return { ok: true, id: data.id }
 }
 
 /** Met à jour le statut et/ou les blessés d'une fusillade. */
