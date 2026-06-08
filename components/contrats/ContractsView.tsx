@@ -9,7 +9,7 @@ import { MUTUELLES, mutuellePrice } from '@/lib/constants'
 import { fmtMoney } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { saveContract, deleteContract, type ContractInput } from '@/lib/actions/contracts'
-import { handleImageInput } from '@/lib/image'
+import { handleImageUpload } from '@/lib/image'
 import type { Contract } from '@/lib/types'
 
 const TIER_BADGE: Record<string, string> = { actif: 'ok', 'expiré': 'crit', 'en attente': 'warn' }
@@ -132,7 +132,7 @@ function ContractModal({ contract, onClose, onSaved }: { contract: Contract | nu
   const [busy, setBusy] = useState(false)
   const set = (k: keyof ContractInput, v: unknown) => setF((p) => ({ ...p, [k]: v }))
   const onLogo = (file?: File) => {
-    handleImageInput(file, (dataUrl) => set('logo', dataUrl), { maxWidth: 400 })
+    handleImageUpload(file, 'contracts/logos', (url) => set('logo', url), { maxWidth: 400 })
   }
   const price = mutuellePrice(f.type as 'standard' | 'premium', f.tier)
 

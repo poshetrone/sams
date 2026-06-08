@@ -156,6 +156,23 @@ export async function addContractPhoto(memberId: string, src: string): Promise<R
   return { ok: true }
 }
 
+/** Supprime une photo de contrat d'un employé (Direction). */
+export async function deleteContractPhoto(memberId: string, photoId: string): Promise<Result> {
+  try {
+    await requirePerm('manageStaff')
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+  const admin = createServiceClient()
+  const { data: m } = await admin.from('members').select('contract_photos').eq('id', memberId).maybeSingle()
+  if (!m) return { ok: false, error: 'Employé introuvable' }
+  const photos = ((m.contract_photos as { id: string; src: string; date: string }[]) || []).filter((p) => p.id !== photoId)
+  const { error } = await admin.from('members').update({ contract_photos: photos }).eq('id', memberId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/effectifs')
+  return { ok: true }
+}
+
 /* ---------- Formations (validation par membre) ---------- */
 export async function updateMemberFormations(id: string, formations: string[]): Promise<Result> {
   try {

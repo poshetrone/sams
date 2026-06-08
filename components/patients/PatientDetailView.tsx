@@ -9,7 +9,7 @@ import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { updatePatient, deletePatient, declareDeath, importPatientDoc } from '@/lib/actions/patients'
 import { addCalendarEvent } from '@/lib/actions/calendar'
-import { handleImageInput } from '@/lib/image'
+import { handleImageUpload } from '@/lib/image'
 import VitalsChart from './VitalsChart'
 import PatientBilling from './PatientBilling'
 import PatientModal from './PatientModal'
@@ -98,7 +98,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
     (d.mime || '').startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(d.fileName || d.file || '')
   const onUploadImg = (file?: File) => {
     if (!file) return
-    handleImageInput(file, (src) => saveImage({ id: 'im' + Date.now(), src, label: file.name.replace(/\.[^.]+$/, ''), type: 'Autre', date: todayFull() }))
+    handleImageUpload(file, 'patients/imagerie', (url) => saveImage({ id: 'im' + Date.now(), src: url, label: file.name.replace(/\.[^.]+$/, ''), type: 'Autre', date: todayFull() }))
   }
 
   const delHistory = (i: number) => persist({ history: (patient.history || []).filter((_, j) => j !== i) })

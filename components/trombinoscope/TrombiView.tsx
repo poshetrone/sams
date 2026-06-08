@@ -6,7 +6,7 @@ import { GRADES, type GradeKey } from '@/lib/constants'
 import { initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { addPost, deletePost, toggleLike } from '@/lib/actions/trombi'
-import { handleImageInput } from '@/lib/image'
+import { handleImageUpload } from '@/lib/image'
 import { useRealtime } from '@/lib/useRealtime'
 import type { TrombiPost } from '@/lib/types'
 
@@ -24,7 +24,7 @@ export default function TrombiView({ posts }: { posts: TrombiPost[] }) {
   }, [posts.length])
 
   const onPhoto = (file?: File) => {
-    handleImageInput(file, setPhoto)
+    handleImageUpload(file, 'trombi', setPhoto)
   }
   const send = async () => {
     if (!text.trim() && !photo) return

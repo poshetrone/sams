@@ -6,6 +6,7 @@ import { Badge, GradePill, Card } from '@/components/ui'
 import Modal from '@/components/Modal'
 import EmployeeModal from './EmployeeModal'
 import ContractEditor from './ContractEditor'
+import ContractCell from './ContractCell'
 import { GRADES, POLES, MEMBER_STATUS, type GradeKey } from '@/lib/constants'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
@@ -133,8 +134,8 @@ export default function EffectifsView({ members }: { members: Member[] }) {
                     </div>
                   </td>
                   <td style={{ color: m.phone ? 'var(--ink-200)' : 'var(--ink-500)', fontSize: 13, whiteSpace: 'nowrap' }}>{m.phone ? fmtPhone(m.phone) : '—'}</td>
-                  <td style={{ color: 'var(--ink-500)', fontSize: 12 }}>
-                    {(m.contract_photos || []).length > 0 ? `${m.contract_photos.length} pièce(s)` : '—'}
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <ContractCell member={m} isAdmin={isAdmin} onChanged={() => router.refresh()} />
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

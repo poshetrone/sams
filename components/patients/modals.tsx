@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Modal from '@/components/Modal'
 import { Icons } from '@/components/Icons'
 import { useApp } from '@/lib/app-context'
-import { handleImageInput } from '@/lib/image'
+import { handleImageUpload } from '@/lib/image'
 import type { Appointment, VitalsRecord, HistoryEntry, PatientImage, Invoice } from '@/lib/types'
 
 const toFr = (iso: string) => {
@@ -144,7 +144,7 @@ export function ImagingModal({ onClose, onSave }: { onClose: () => void; onSave:
   const [label, setLabel] = useState('')
   const [src, setSrc] = useState<string | null>(null)
   const onFile = (file?: File) => {
-    handleImageInput(file, setSrc)
+    handleImageUpload(file, 'patients/imagerie', setSrc)
   }
   return (
     <Modal onClose={onClose} title="Ajouter un cliché" icon={<Icons.eye size={20} />}>

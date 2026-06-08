@@ -4,7 +4,7 @@ import { Icons } from '@/components/Icons'
 import { GRADES, type GradeKey } from '@/lib/constants'
 import { fmtMoney, fmtPhone } from '@/lib/format'
 import { exportPng } from '@/lib/export-png'
-import { compressImage } from '@/lib/image'
+import { uploadImage } from '@/lib/image'
 import { addContractPhoto } from '@/lib/actions/members'
 import type { Member } from '@/lib/types'
 
@@ -55,9 +55,11 @@ export default function ContractEditor({ employees, onClose, onSavedPhoto }: { e
 
   const onPhoto = async (file?: File) => {
     if (!file) return
-    if (!employee) { flash('Sélectionnez un employé pour rattacher'); return }
-    const src = await compressImage(file)
-    const res = await addContractPhoto(employee.id, src)
+    if (!employee) { flash('Sélectionnez un employé pour rattacher la photo'); return }
+    flash('Upload de la photo…')
+    const url = await uploadImage(file, 'contracts/photos')
+    if (!url) { flash("Échec de l'upload de la photo") ; return }
+    const res = await addContractPhoto(employee.id, url)
     if (res.ok) { flash('Photo du contrat ajoutée ✓'); onSavedPhoto?.() } else flash(res.error || 'Erreur')
   }
 
@@ -71,7 +73,7 @@ export default function ContractEditor({ employees, onClose, onSavedPhoto }: { e
         </select>
         <div className="ct-tools">
           <button className="btn btn-ghost" onClick={clearAll}><Icons.reset size={14} /> Vider</button>
-          {employee && <button className="btn btn-ghost" onClick={() => fileRef.current?.click()}><Icons.upload size={14} /> Importer signé</button>}
+          <button className="btn btn-ghost" onClick={() => fileRef.current?.click()} title="Uploader la photo du contrat signé (rattachée à l'employé sélectionné)"><Icons.camera size={14} /> Photo du contrat</button>
           <button className="btn btn-gold" onClick={download}><Icons.download size={14} /> Télécharger PNG</button>
           <button className="btn btn-ghost" onClick={onClose}><Icons.x size={15} /> Fermer</button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onPhoto(e.target.files?.[0])} />

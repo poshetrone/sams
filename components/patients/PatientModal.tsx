@@ -4,7 +4,7 @@ import Modal from '@/components/Modal'
 import { Icons } from '@/components/Icons'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { createPatient, updatePatient } from '@/lib/actions/patients'
-import { handleImageInput } from '@/lib/image'
+import { handleImageUpload } from '@/lib/image'
 import type { Patient, Emergency, Vitals } from '@/lib/types'
 
 interface PForm {
@@ -76,7 +76,7 @@ export default function PatientModal({
   const setV = (k: keyof Vitals, v: string) => setF((p) => ({ ...p, vitals: { ...p.vitals, [k]: v } }))
 
   const onFile = (file: File | undefined, key: 'photo' | 'id_card') => {
-    handleImageInput(file, (dataUrl) => set(key, dataUrl))
+    handleImageUpload(file, key === 'photo' ? 'patients/photos' : 'patients/idcards', (url) => set(key, url))
   }
 
   const save = async () => {

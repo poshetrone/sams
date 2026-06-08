@@ -1,4 +1,5 @@
 'use client'
+import { uploadToMedia } from '@/lib/actions/storage'
 
 export interface CompressOptions {
   /** Largeur (et hauteur) maximale en pixels. L'image n'est jamais agrandie. */
@@ -15,7 +16,7 @@ export interface CompressOptions {
  * À utiliser pour TOUS les uploads d'images avant envoi au serveur.
  */
 export async function compressImage(file: File, opts: CompressOptions = {}): Promise<string> {
-  const { maxWidth = 1000, quality = 0.8, mime = 'image/webp' } = opts
+  const { maxWidth = 1200, quality = 0.8, mime = 'image/webp' } = opts
 
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const r = new FileReader()
@@ -53,21 +54,27 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
 }
 
 /**
- * Helper pratique pour un <input type="file">. Compresse puis appelle `cb`
- * avec le data URL. Ignore si aucun fichier.
+ * Compresse une image puis l'upload dans Storage (`media/<folder>`).
+ * Renvoie l'URL publique, ou null en cas d'échec.
  */
-export async function handleImageInput(
+export async function uploadImage(file: File, folder: string, opts?: CompressOptions): Promise<string | null> {
+  const dataUrl = await compressImage(file, opts)
+  const res = await uploadToMedia(folder, file.name, file.type, dataUrl)
+  return res.ok ? res.url ?? null : null
+}
+
+/**
+ * Helper pour un <input type="file"> : compresse, upload dans Storage, puis
+ * appelle `cb` avec l'URL publique. C'est la voie à utiliser pour TOUS les
+ * uploads d'images (on stocke l'URL en base, pas un data URL inline).
+ */
+export async function handleImageUpload(
   file: File | undefined | null,
-  cb: (dataUrl: string) => void,
+  folder: string,
+  cb: (url: string) => void,
   opts?: CompressOptions
 ): Promise<void> {
   if (!file) return
-  try {
-    cb(await compressImage(file, opts))
-  } catch {
-    // En dernier recours, on lit le fichier brut.
-    const r = new FileReader()
-    r.onload = () => cb(r.result as string)
-    r.readAsDataURL(file)
-  }
+  const url = await uploadImage(file, folder, opts)
+  if (url) cb(url)
 }

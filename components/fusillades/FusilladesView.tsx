@@ -1,14 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { Badge, Card, SecTitle } from '@/components/ui'
 import Modal from '@/components/Modal'
 import { SEVERITY, TRIAGE, GTA_ZONES } from '@/lib/constants'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
-import { createFusillade, updateFusillade, createPatientFromWounded, type FusilladeInput } from '@/lib/actions/fusillades'
-import { handleImageInput } from '@/lib/image'
+import { createFusillade, updateFusillade, createPatientFromWounded, deleteFusillade, type FusilladeInput } from '@/lib/actions/fusillades'
+import { handleImageUpload } from '@/lib/image'
 import { useRealtime } from '@/lib/useRealtime'
 import type { Fusillade, Wounded, Patient } from '@/lib/types'
 
@@ -36,33 +36,65 @@ function GtaMap({ marker, onPick, max = 560 }: { marker?: { x: number | null; y:
 
 export default function FusilladesView({ fusillades: initial, patients }: { fusillades: Fusillade[]; patients: Patient[] }) {
   const router = useRouter()
-  const { search } = useApp()
+  const searchParams = useSearchParams()
+  const { search, isAdmin } = useApp()
   useRealtime('fusillades')
   const [fusillades, setFusillades] = useState(initial)
   useEffect(() => setFusillades(initial), [initial])
   const [sel, setSel] = useState<string | null>(null)
   const [addF, setAddF] = useState(false)
+  const [confirmDel, setConfirmDel] = useState<Fusillade | null>(null)
+
+  // Ouverture directe d'une fusillade via ?open=<id> (clic sur une notification)
+  useEffect(() => {
+    const o = searchParams.get('open')
+    if (o) setSel(o)
+  }, [searchParams])
 
   const current = sel ? fusillades.find((f) => f.id === sel) : null
+
+  const confirmModal = confirmDel && (
+    <Modal onClose={() => setConfirmDel(null)} title="Supprimer la fusillade" icon={<Icons.trash size={20} />}>
+      <p style={{ color: 'var(--ink-200)', fontSize: 14, lineHeight: 1.6 }}>
+        Supprimer définitivement <b style={{ color: 'var(--ink-100)' }}>{confirmDel.title}</b> ? Les blessés enregistrés sur cette intervention seront aussi retirés. Cette action est irréversible.
+      </p>
+      <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+        <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmDel(null)}>Annuler</button>
+        <button className="btn-refuse" style={{ flex: 1, justifyContent: 'center' }} onClick={() => removeFusillade(confirmDel)}><Icons.trash size={15} /> Supprimer</button>
+      </div>
+    </Modal>
+  )
 
   const update = (f: Fusillade, patch: Partial<Pick<Fusillade, 'status' | 'wounded'>>) => {
     setFusillades((prev) => prev.map((x) => (x.id === f.id ? { ...x, ...patch } : x)))
     updateFusillade(f.id, patch)
   }
+  const removeFusillade = async (f: Fusillade) => {
+    setFusillades((prev) => prev.filter((x) => x.id !== f.id))
+    setConfirmDel(null)
+    if (sel === f.id) setSel(null)
+    await deleteFusillade(f.id)
+    router.refresh()
+  }
 
   if (current) {
     return (
-      <FusilladeDetail
-        fus={current}
-        patients={patients}
-        onBack={() => setSel(null)}
-        onUpdate={update}
-        onCreatePatient={async (w) => {
-          const res = await createPatientFromWounded(current.id, w)
-          if (res.ok && res.id) router.push(`/patients/${res.id}`)
-        }}
-        onOpenPatient={(id) => router.push(`/patients/${id}`)}
-      />
+      <>
+        <FusilladeDetail
+          fus={current}
+          patients={patients}
+          isAdmin={isAdmin}
+          onBack={() => setSel(null)}
+          onUpdate={update}
+          onDelete={() => setConfirmDel(current)}
+          onCreatePatient={async (w) => {
+            const res = await createPatientFromWounded(current.id, w)
+            if (res.ok && res.id) router.push(`/patients/${res.id}`)
+          }}
+          onOpenPatient={(id) => router.push(`/patients/${id}`)}
+        />
+        {confirmModal}
+      </>
     )
   }
 
@@ -81,7 +113,12 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
           const sev = SEVERITY[f.severity] || SEVERITY['modérée']
           const urgent = (f.wounded || []).filter((w) => w.triage === 'urgent').length
           return (
-            <Card key={f.id} className="fus-card" onClick={() => setSel(f.id)}>
+            <Card key={f.id} className="fus-card" onClick={() => setSel(f.id)} style={{ position: 'relative' }}>
+              {isAdmin && (
+                <div className="fus-del" title="Supprimer la fusillade" onClick={(e) => { e.stopPropagation(); setConfirmDel(f) }}>
+                  <Icons.trash size={15} />
+                </div>
+              )}
               <div className="fus-map-mini">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/gta-map.png" alt="" />
@@ -106,15 +143,18 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
       </div>
 
       {addF && <NewFusilladeModal onClose={() => setAddF(false)} onSaved={() => { setAddF(false); router.refresh() }} />}
+      {confirmModal}
     </div>
   )
 }
 
-function FusilladeDetail({ fus, patients, onBack, onUpdate, onCreatePatient, onOpenPatient }: {
+function FusilladeDetail({ fus, patients, isAdmin, onBack, onUpdate, onDelete, onCreatePatient, onOpenPatient }: {
   fus: Fusillade
   patients: Patient[]
+  isAdmin: boolean
   onBack: () => void
   onUpdate: (f: Fusillade, patch: Partial<Pick<Fusillade, 'status' | 'wounded'>>) => void
+  onDelete: () => void
   onCreatePatient: (w: Wounded) => void
   onOpenPatient: (id: string) => void
 }) {
@@ -133,6 +173,7 @@ function FusilladeDetail({ fus, patients, onBack, onUpdate, onCreatePatient, onO
         <div className="spacer"></div>
         <button className="btn btn-ghost" onClick={toggleStatus}>{fus.status === 'en cours' ? <><Icons.check size={14} /> Clôturer</> : <><Icons.pulse size={14} /> Rouvrir</>}</button>
         <button className="btn btn-gold" onClick={() => setAddW(true)}><Icons.plus size={15} /> Ajouter un blessé</button>
+        {isAdmin && <button className="btn-revoke" onClick={onDelete}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Supprimer</button>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
@@ -251,7 +292,7 @@ function WoundedModal({ patients, onClose, onSave }: { patients: Patient[]; onCl
   const [showSug, setShowSug] = useState(true)
   const set = (k: keyof Wounded, v: unknown) => setF((prev) => ({ ...prev, [k]: v }))
   const onImg = (k: 'photo' | 'idCard', file?: File) => {
-    handleImageInput(file, (dataUrl) => set(k, dataUrl))
+    handleImageUpload(file, 'fusillades', (url) => set(k, url))
   }
   const matches = f.name.trim().length >= 2 && !f.patientId ? patients.filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(f.name.toLowerCase())).slice(0, 6) : []
   const pick = (p: Patient) => { setF((prev) => ({ ...prev, name: `${p.first_name} ${p.last_name}`, sex: p.sex, phone: p.phone || '', photo: p.photo || prev.photo, patientId: p.id })); setShowSug(false) }

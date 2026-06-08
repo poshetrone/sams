@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember } from '@/lib/auth'
+import { getCurrentMember, requireAdmin } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 import type { Wounded, Fusillade } from '@/lib/types'
 
@@ -48,6 +48,23 @@ export async function updateFusillade(id: string, patch: Partial<Pick<Fusillade,
   const admin = createServiceClient()
   const { error } = await admin.from('fusillades').update(patch).eq('id', id)
   if (error) return { ok: false, error: error.message }
+  revalidatePath('/fusillades')
+  return { ok: true }
+}
+
+/** Supprime une fusillade (et ses blessés, stockés dans la même ligne). Direction uniquement. */
+export async function deleteFusillade(id: string): Promise<Result> {
+  let me
+  try {
+    me = await requireAdmin()
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+  const admin = createServiceClient()
+  const { data: fus } = await admin.from('fusillades').select('title, zone').eq('id', id).maybeSingle()
+  const { error } = await admin.from('fusillades').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  await logAudit(me, 'a supprimé une fusillade —', fus?.title || fus?.zone || '')
   revalidatePath('/fusillades')
   return { ok: true }
 }
