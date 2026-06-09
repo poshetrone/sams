@@ -28,6 +28,7 @@ export const DOC_META: Record<string, { name: string; prefix: string; legal: str
   deces:      { name: 'Acte de constatation de décès', prefix: 'DC', legal: "Acte officiel établi par un praticien habilité du SAMS. Toute fausse déclaration constitue une infraction passible de poursuites." },
   bilan:      { name: 'Fiche bilan secours', prefix: 'FBS', legal: "Fiche de bilan d'intervention — secret médical applicable. Document à conserver au dossier du service médical SAMS." },
   imagerie:   { name: "Compte-rendu d'imagerie médicale", prefix: 'IMG', legal: "Compte-rendu radiologique couvert par le secret médical. Le cliché illustre l'examen pratiqué au sein du service SAMS." },
+  gyneco:     { name: "Compte-rendu d'examen gynécologique", prefix: 'GYN', legal: "Compte-rendu couvert par le secret médical. Diffusion strictement restreinte à la patiente et au service médical SAMS." },
 }
 
 function PRow({ label, initial, placeholder, field }: { label: string; initial?: string; placeholder?: string; field?: string }) {
@@ -403,9 +404,100 @@ function BodyImagerie() {
   )
 }
 
+/* ---- Examen gynécologique ---- */
+const ECHOS = [
+  { v: '6sa', label: 'Semaine 6' },
+  { v: '7sa', label: 'Semaine 7' },
+  { v: '8sa', label: 'Semaine 8' },
+  { v: '9sa', label: 'Semaine 9' },
+  { v: '10sa', label: 'Semaine 10' },
+  { v: '11sa', label: 'Semaine 11' },
+  { v: '12sa', label: 'Semaine 12' },
+  { v: '13sa', label: 'Semaine 13' },
+  { v: '14sa', label: 'Semaine 14' },
+  { v: '6mois', label: 'Semaine 26' },
+  { v: '8mois', label: 'Semaine 35' },
+]
+
+function BodyGyneco() {
+  const [grossesse, setGrossesse] = useDocField('grossesse', 'non')
+  const [echo, setEcho] = useDocField('echo', '')
+  const sel = ECHOS.find((e) => e.v === echo)
+  return (
+    <>
+      <div className="paper-section">
+        <div className="ps-label">Cadre de la consultation</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+          <PRow label="Gynécologue" placeholder="Dr. …" />
+          <PRow label="Date de l'examen" initial={todayFR()} placeholder="JJ/MM/AAAA" />
+          <PRow label="Motif" placeholder="Suivi annuel, douleurs, grossesse…" />
+          <PRow label="Dernières règles" placeholder="JJ/MM/AAAA" />
+        </div>
+      </div>
+      <div className="paper-section">
+        <div className="ps-label">Antécédents gynécologiques</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+          <PRow label="Grossesses (gestité)" placeholder="…" />
+          <PRow label="Accouchements (parité)" placeholder="…" />
+          <PRow label="Contraception" placeholder="Aucune / pilule / …" />
+          <PRow label="Allergies / traitements" placeholder="—" />
+        </div>
+      </div>
+      <div className="paper-section">
+        <div className="ps-label">Examen clinique</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
+          <PRow label="Tension artérielle" placeholder="… mmHg" />
+          <PRow label="Poids" placeholder="… kg" />
+        </div>
+        <Editable className="paper-textblock" field="examen_clinique" placeholder="Observations cliniques (examen abdominal, échographie, prélèvements…)…" />
+      </div>
+      <div className="paper-section">
+        <div className="ps-label">Grossesse</div>
+        <div className="verdict-box">
+          <div className={`verdict-opt ${grossesse === 'non' ? 'sel-ok' : ''}`} onClick={() => setGrossesse('non')}>NON</div>
+          <div className={`verdict-opt ${grossesse === 'oui' ? 'sel-warn' : ''}`} onClick={() => setGrossesse('oui')}>OUI</div>
+        </div>
+        {grossesse === 'oui' && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px', marginTop: 10 }}>
+              <PRow label="Terme estimé" placeholder="… SA / JJ/MM/AAAA" />
+              <PRow label="Rythme cardiaque fœtal" placeholder="… bpm" />
+              <PRow label="Suivi recommandé" placeholder="Échographie de contrôle à …" />
+              <PRow label="Précautions" placeholder="Repos, arrêt de service…" />
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <div className="ps-label">Échographie</div>
+              <div className="no-print" style={{ margin: '10px 0 12px', maxWidth: 320 }}>
+                <select value={echo} onChange={(e) => setEcho(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #cfd4dc', background: '#fff', color: '#1a2330', fontFamily: 'Archivo, sans-serif', fontSize: 13, outline: 'none' }}>
+                  <option value="">— Sélectionner le stade de la grossesse —</option>
+                  {ECHOS.map((e) => <option key={e.v} value={e.v}>{e.label}</option>)}
+                </select>
+              </div>
+              {sel ? (
+                <div style={{ textAlign: 'center' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/assets/echo/${sel.v}.png`} alt="" crossOrigin="anonymous" style={{ width: 260, maxWidth: '100%', borderRadius: 8, border: '1px solid #1c2330', background: '#08090b' }} />
+                  <div style={{ fontSize: 12, color: '#5a6678', marginTop: 6 }}>Échographie — {sel.label}</div>
+                </div>
+              ) : <div className="imagerie-empty no-print">Aucune échographie sélectionnée — choisissez le stade ci-dessus.</div>}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="paper-section">
+        <div className="ps-label">Conclusion &amp; recommandations</div>
+        <Editable className="paper-textblock" field="conclusion" placeholder="Conclusion de l'examen, traitement prescrit, prochaine consultation…" />
+        <PRow label="Prochain contrôle" placeholder="JJ/MM/AAAA" />
+      </div>
+    </>
+  )
+}
+
 const DOC_BODIES: Record<string, () => React.JSX.Element> = {
   aptitude: BodyAptitude, psy: BodyPsy, ordonnance: BodyOrdonnance, arret: BodyArret,
   accident: BodyAccident, deces: BodyDeces, rapport: BodyRapport, bilan: BodyBilan, imagerie: BodyImagerie,
+  gyneco: BodyGyneco,
 }
 
 export default function DocPaper({

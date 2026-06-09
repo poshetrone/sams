@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Icons } from './Icons'
 import { NAV, PAGE_META } from '@/lib/constants'
@@ -30,6 +30,11 @@ export default function TopBar() {
   const key = activeKey(pathname)
   const meta = PAGE_META[key] || PAGE_META.dashboard
 
+  // Vide automatiquement la recherche dès qu'on quitte la page patients.
+  useEffect(() => {
+    if (key !== 'patients') setSearch('')
+  }, [key, setSearch])
+
   const openNotif = (id: string) => {
     markRead(id)
     setOpen(false)
@@ -50,6 +55,17 @@ export default function TopBar() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher un patient…"
           />
+          {search && (
+            <button
+              type="button"
+              className="search-clear"
+              title="Effacer la recherche"
+              aria-label="Effacer la recherche"
+              onClick={() => setSearch('')}
+            >
+              <Icons.x size={15} />
+            </button>
+          )}
         </div>
       )}
 

@@ -32,6 +32,7 @@ const TABS = [
 const docIcon: Record<string, string> = {
   aptitude: 'shield', psy: 'brain', ordonnance: 'pill', arret: 'pause', accident: 'alert',
   rapport: 'body', deces: 'cross', import: 'file', facture: 'coin', bilan: 'pulse', imagerie: 'eye',
+  gyneco: 'heart',
 }
 
 const todayFull = () => {
@@ -329,7 +330,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                   ) : (
                     <button className="icon-btn" style={{ width: 34, height: 34 }} title="Aperçu" onClick={() => setViewDoc(d)}><Icons.eye size={16} /></button>
                   )}
-                  {editable && canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delDoc(d.id)}><Icons.trash size={15} /></div>}
+                  {editable && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Retirer le document" onClick={() => delDoc(d.id)}><Icons.trash size={15} /></div>}
                 </div>
               )
             })}

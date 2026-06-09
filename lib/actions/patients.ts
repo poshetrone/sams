@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireEdit, requireEditAny } from '@/lib/auth'
+import { can } from '@/lib/constants'
 import { logAudit } from '@/lib/actions/audit'
 import type { PatientPatch, PatientDoc, PatientImage } from '@/lib/types'
 
@@ -133,10 +134,12 @@ export async function updatePatient(id: string, patch: PatientPatch): Promise<Re
   return { ok: true }
 }
 
-/** Supprime un dossier patient (Direction / Responsable). */
+/** Supprime un dossier patient — RÉSERVÉ À LA DIRECTION. */
 export async function deletePatient(id: string, label: string): Promise<Result> {
   try {
     const me = await requireEdit('patients')
+    // Garde-fou : « Edit » sur Patients ne suffit pas, il faut être Direction.
+    if (!can('deletePatient', me.grade)) return { ok: false, error: 'Suppression de dossier réservée à la Direction' }
     const admin = createServiceClient()
     const { error } = await admin.from('patients').delete().eq('id', id)
     if (error) return { ok: false, error: error.message }
@@ -148,10 +151,12 @@ export async function deletePatient(id: string, label: string): Promise<Result> 
   }
 }
 
-/** Déclare un patient décédé (Médecin Senior et +). */
+/** Déclare un patient décédé — RÉSERVÉ À LA DIRECTION. */
 export async function declareDeath(id: string, label: string): Promise<Result> {
   try {
     const me = await requireEdit('patients')
+    // Garde-fou : « Edit » sur Patients ne suffit pas, il faut être Direction.
+    if (!can('declareDeath', me.grade)) return { ok: false, error: 'Déclaration de décès réservée à la Direction' }
     const admin = createServiceClient()
     const { error } = await admin.from('patients').update({ status: 'deces', care: 'sorti' }).eq('id', id)
     if (error) return { ok: false, error: error.message }

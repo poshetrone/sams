@@ -141,6 +141,10 @@ export interface Timeclock {
   member_id: string | null
   name: string | null
   grade: string | null
+  /** Instants UTC canoniques (timestamptz). Affichés toujours en Europe/Paris. */
+  start_at: string | null
+  end_at: string | null
+  /** Champs d'affichage dérivés (heure de Paris) — back-compat / requêtes. */
   date: string | null
   start: string | null
   end: string | null

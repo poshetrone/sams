@@ -37,11 +37,15 @@ export type PermAction =
 
 export const PERMS: Record<PermAction, string[]> = {
   signDoc:       ['medecin', 'medecin1', 'medecin2', 'medsenior', 'medchef', 'responsable', 'codirecteur', 'directeur', 'directiongen'],
-  declareDeath:  ['medsenior', 'medchef', 'responsable', 'codirecteur', 'directeur', 'directiongen'],
-  deletePatient: ['responsable', 'codirecteur', 'directeur', 'directiongen'],
+  // Suppression de dossier & déclaration de décès : réservées à la Direction,
+  // QUEL QUE SOIT le niveau d'accès « Edit » sur la catégorie Patients.
+  declareDeath:  ADMIN_GRADES,
+  deletePatient: ADMIN_GRADES,
   manageAccess:  ADMIN_GRADES,
   resetPrime:    ADMIN_GRADES,
   manageStaff:   ADMIN_GRADES,
+  // Facturation : couverte par le niveau « Edit » sur Patients (plus de
+  // restriction de grade dédiée). Gardé dans la matrice à titre indicatif.
   billing:       ['medchef', 'responsable', 'codirecteur', 'directeur', 'directiongen'],
 }
 
@@ -89,6 +93,7 @@ export const DOC_TYPES: DocType[] = [
   { key: 'arret',      title: 'Arrêt de travail',                     desc: 'Interruption temporaire de service.', icon: 'pause' },
   { key: 'accident',   title: 'Accident de travail',                  desc: "Déclaration officielle d'accident.", icon: 'alert' },
   { key: 'deces',      title: 'Acte de décès',                        desc: 'Constat officiel de décès.', icon: 'cross' },
+  { key: 'gyneco',     title: 'Examen gynécologique',                 desc: 'Consultation gynécologique / suivi de grossesse.', icon: 'heart' },
 ]
 
 /* ---- Formations ---- */

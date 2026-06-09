@@ -16,14 +16,15 @@ export default function PatientBilling({
   patient: Patient
   persist: (patch: PatientPatch) => void
 }) {
-  const { can, isAdmin, canEdit } = useApp()
+  const { canEdit } = useApp()
   const editable = canEdit('patients')
   const [modal, setModal] = useState(false)
   const [card, setCard] = useState<Invoice | null>(null)
   const invoices = patient.invoices || []
   const total = invoices.reduce((s, i) => s + i.amount, 0)
   const due = invoices.filter((i) => i.status !== 'payée').reduce((s, i) => s + i.amount, 0)
-  const allowed = editable && can('billing')
+  // La facturation est couverte par le niveau « Edit » sur la catégorie Patients.
+  const allowed = editable
 
   const add = (inv: Invoice) => persist({ invoices: [inv, ...invoices] })
   const del = (id: string) => persist({ invoices: invoices.filter((i) => i.id !== id) })
@@ -58,7 +59,7 @@ export default function PatientBilling({
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--gold-300)' }}>{fmtMoney(inv.amount)}</span>
               <Badge cls={inv.status === 'payée' ? 'ok' : 'warn'}>{inv.status}</Badge>
               <div className="icon-btn" style={{ width: 34, height: 34 }} title="Facture PNG" onClick={() => setCard(inv)}><Icons.download size={16} /></div>
-              {editable && isAdmin && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => del(inv.id)}><Icons.trash size={15} /></div>}
+              {editable && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer la facture" onClick={() => del(inv.id)}><Icons.trash size={15} /></div>}
             </div>
           )
         })}
