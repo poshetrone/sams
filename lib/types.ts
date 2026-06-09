@@ -51,6 +51,8 @@ export interface Invoice {
 export interface PatientDoc {
   id: string; type: string; title: string; date: string
   author: string; state: string; file?: string; fileName?: string; mime?: string
+  /** Contenu structuré saisi dans l'éditeur (champs, textes, zones, sexe…). */
+  content?: Record<string, unknown>
 }
 
 export interface Patient {

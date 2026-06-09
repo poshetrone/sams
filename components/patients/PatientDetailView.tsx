@@ -371,7 +371,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {imgLightbox && <div className="modal-overlay" onClick={() => setImgLightbox(null)}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={imgLightbox} alt="" style={{ maxWidth: '92vw', maxHeight: '90vh', borderRadius: 10, boxShadow: 'var(--shadow-pop)' }} onClick={(e) => e.stopPropagation()} /></div>}
       {rdvCard && <AppointmentCard patient={patient} appt={rdvCard} onClose={() => setRdvCard(null)} />}
       {editOpen && <PatientModal patient={patient} onClose={() => setEditOpen(false)} onSaved={() => router.refresh()} />}
-      {viewDoc && <DocViewer type={viewDoc.type} patient={patient} onClose={() => setViewDoc(null)} />}
+      {viewDoc && <DocViewer doc={viewDoc} patient={patient} onClose={() => setViewDoc(null)} onSaved={() => router.refresh()} />}
 
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(false)} title="Supprimer le dossier" icon={<Icons.trash size={20} />}>

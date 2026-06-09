@@ -13,11 +13,32 @@ export async function attachPatientDoc(patientId: string, entry: PatientDoc): Pr
   if (!me) return { ok: false, error: 'Non authentifié' }
   const admin = createServiceClient()
   const { data: p } = await admin.from('patients').select('docs').eq('id', patientId).maybeSingle()
-  if (!p) return { ok: false, error: 'Patient introuvable' }
+  if (!p) return { ok: false, error: 'Patient introuvable — rechargez la page (F5) et resélectionnez le patient.' }
   const docs = [entry, ...((p.docs as PatientDoc[]) || [])]
   const { error } = await admin.from('patients').update({ docs }).eq('id', patientId)
   if (error) return { ok: false, error: error.message }
   await logAudit(me, 'a rattaché un document au dossier', '')
+  revalidatePath(`/patients/${patientId}`)
+  return { ok: true }
+}
+
+/** Met à jour un document existant du dossier (par id) — pas de doublon. */
+export async function updatePatientDoc(patientId: string, docId: string, patch: Partial<PatientDoc>): Promise<Result> {
+  const me = await getCurrentMember()
+  if (!me) return { ok: false, error: 'Non authentifié' }
+  const admin = createServiceClient()
+  const { data: p } = await admin.from('patients').select('docs').eq('id', patientId).maybeSingle()
+  if (!p) return { ok: false, error: 'Patient introuvable' }
+  let found = false
+  const docs = ((p.docs as PatientDoc[]) || []).map((d) => {
+    if (d.id !== docId) return d
+    found = true
+    return { ...d, ...patch }
+  })
+  if (!found) return { ok: false, error: 'Document introuvable' }
+  const { error } = await admin.from('patients').update({ docs }).eq('id', patientId)
+  if (error) return { ok: false, error: error.message }
+  await logAudit(me, 'a mis à jour un document du dossier', '')
   revalidatePath(`/patients/${patientId}`)
   return { ok: true }
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { SecTitle } from '@/components/ui'
@@ -32,6 +32,7 @@ export default function DocumentsView({
   const [type, setType] = useState<string | null>(initialType || null)
   const [patient, setPatient] = useState<Patient | null>(patients.find((p) => p.id === initialPatientId) || null)
   const [deathDone, setDeathDone] = useState(false)
+  const contentRef = useRef<Record<string, unknown>>({})
   const [toast, setToast] = useState<string | null>(null)
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2600) }
 
@@ -49,7 +50,7 @@ export default function DocumentsView({
       flash(res.ok ? `Rapport ajouté à l'imagerie de ${patient.first_name} ✓` : res.error || 'Erreur')
       return
     }
-    const res = await attachPatientDoc(patient.id, { id: 'd' + Date.now(), type, title: `${typeLabel} — ${patient.last_name}`, date: todayFull(), author: member.name, state: 'rattaché' })
+    const res = await attachPatientDoc(patient.id, { id: 'd' + Date.now(), type, title: `${typeLabel} — ${patient.last_name}`, date: todayFull(), author: member.name, state: 'rattaché', content: { ...contentRef.current } })
     flash(res.ok ? `Document rattaché au dossier de ${patient.first_name} ✓` : res.error || 'Erreur')
   }
 
@@ -97,7 +98,7 @@ export default function DocumentsView({
         </div>
 
         <div className="paper-stage">
-          <DocPaper type={type} patient={patient} user={member} />
+          <DocPaper key={type} type={type} patient={patient} user={member} contentRef={contentRef} />
         </div>
 
         {toast && <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: 'var(--navy-600)', border: '1px solid var(--gold-glow)', color: 'var(--gold-300)', padding: '12px 22px', borderRadius: 12, fontSize: 13.5, fontWeight: 600, zIndex: 90, boxShadow: 'var(--shadow-pop)' }} className="no-print">{toast}</div>}

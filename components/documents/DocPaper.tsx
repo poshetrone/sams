@@ -1,7 +1,8 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { Icons } from '@/components/Icons'
 import Editable from './Editable'
+import { DocContentContext, useDocField, type DocStore, type DocContentCtx } from './doc-content'
 import { PRESET_RADIOS } from '@/components/patients/modals'
 import type { Patient } from '@/lib/types'
 import type { CurrentMember } from '@/lib/app-context'
@@ -12,6 +13,10 @@ const todayFR = () => {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 const refNum = (prefix: string) => `${prefix}-${Math.floor(1000 + Math.random() * 8999)}/26`
+
+/** Slug stable d'un libellé → clé de champ (sans accents, alphanum). */
+const slug = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
 
 export const DOC_META: Record<string, { name: string; prefix: string; legal: string }> = {
   aptitude:   { name: "Certificat d'aptitude médicale", prefix: 'APT', legal: "Document établi conformément au protocole médical du San Andreas Medical Services. Toute falsification expose à des poursuites disciplinaires et pénales." },
@@ -25,11 +30,11 @@ export const DOC_META: Record<string, { name: string; prefix: string; legal: str
   imagerie:   { name: "Compte-rendu d'imagerie médicale", prefix: 'IMG', legal: "Compte-rendu radiologique couvert par le secret médical. Le cliché illustre l'examen pratiqué au sein du service SAMS." },
 }
 
-function PRow({ label, initial, placeholder }: { label: string; initial?: string; placeholder?: string }) {
+function PRow({ label, initial, placeholder, field }: { label: string; initial?: string; placeholder?: string; field?: string }) {
   return (
     <div className="prow">
       <div className="pl">{label}</div>
-      <Editable className="pv" tag="div" initial={initial} placeholder={placeholder || '…'} />
+      <Editable className="pv" tag="div" field={field || slug(label)} initial={initial} placeholder={placeholder || '…'} />
     </div>
   )
 }
@@ -52,7 +57,7 @@ function SignFoot({ user }: { user?: CurrentMember }) {
       <div className="sign-box">
         <div className="sl">Le praticien · Signature &amp; cachet</div>
         <div className="sline"></div>
-        <Editable className="pv" initial={user?.name || ''} placeholder="Nom du praticien" style={{ fontWeight: 600, border: 'none' }} />
+        <Editable className="pv" field="praticien" initial={user?.name || ''} placeholder="Nom du praticien" style={{ fontWeight: 600, border: 'none' }} />
       </div>
       <div className="scachet">SAMS<br />MÉDICAL<br />★ OFFICIEL ★</div>
     </div>
@@ -71,10 +76,10 @@ function PaperShell({ type, patient, user, children }: { type: string; patient: 
       <div className="paper-section">
         <div className="ps-label">Identification du patient</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
-          <PRow label="Nom & prénom" initial={patient ? `${patient.last_name.toUpperCase()} ${patient.first_name}` : ''} placeholder="Nom Prénom" />
-          <PRow label="Date de naissance" initial={patient?.dob || ''} placeholder="JJ/MM/AAAA" />
-          <PRow label="N° de citoyen" initial={patient?.matricule || ''} placeholder="CIT-00000" />
-          <PRow label="Groupe sanguin" initial={patient?.blood} placeholder="—" />
+          <PRow field="pat_name" label="Nom & prénom" initial={patient ? `${patient.last_name.toUpperCase()} ${patient.first_name}` : ''} placeholder="Nom Prénom" />
+          <PRow field="pat_dob" label="Date de naissance" initial={patient?.dob || ''} placeholder="JJ/MM/AAAA" />
+          <PRow field="pat_cit" label="N° de citoyen" initial={patient?.matricule || ''} placeholder="CIT-00000" />
+          <PRow field="pat_blood" label="Groupe sanguin" initial={patient?.blood} placeholder="—" />
         </div>
       </div>
       {children}
@@ -86,16 +91,16 @@ function PaperShell({ type, patient, user, children }: { type: string; patient: 
 
 /* ---- Corps spécifiques ---- */
 function BodyAptitude() {
-  const [verdict, setVerdict] = useState('ok')
+  const [verdict, setVerdict] = useDocField('verdict', 'ok')
   return (
     <>
       <div className="paper-section">
         <div className="ps-label">Examen médical</div>
         <PRow label="Type d'aptitude" initial="Aptitude à l'emploi / port d'arme" />
         <PRow label="Médecin examinateur" placeholder="Dr. …" />
-        <div className="prow"><div className="pl">Tension artérielle</div><Editable className="pv" placeholder="… mmHg" /></div>
-        <div className="prow"><div className="pl">Acuité visuelle</div><Editable className="pv" placeholder="… /10" /></div>
-        <div className="prow"><div className="pl">Bilan général</div><Editable className="pv" placeholder="RAS" /></div>
+        <div className="prow"><div className="pl">Tension artérielle</div><Editable className="pv" field="tension_arterielle" placeholder="… mmHg" /></div>
+        <div className="prow"><div className="pl">Acuité visuelle</div><Editable className="pv" field="acuite_visuelle" placeholder="… /10" /></div>
+        <div className="prow"><div className="pl">Bilan général</div><Editable className="pv" field="bilan_general" placeholder="RAS" /></div>
       </div>
       <div className="paper-section">
         <div className="ps-label">Conclusion</div>
@@ -104,7 +109,7 @@ function BodyAptitude() {
           <div className={`verdict-opt ${verdict === 'warn' ? 'sel-warn' : ''}`} onClick={() => setVerdict('warn')}>APTE AVEC RÉSERVES</div>
           <div className={`verdict-opt ${verdict === 'crit' ? 'sel-crit' : ''}`} onClick={() => setVerdict('crit')}>INAPTE</div>
         </div>
-        <div style={{ marginTop: 14 }}><Editable className="paper-textblock" placeholder="Observations et réserves éventuelles…" /></div>
+        <div style={{ marginTop: 14 }}><Editable className="paper-textblock" field="observations" placeholder="Observations et réserves éventuelles…" /></div>
         <PRow label="Validité du certificat" initial="6 mois" />
       </div>
     </>
@@ -122,11 +127,11 @@ function BodyPsy() {
       </div>
       <div className="paper-section">
         <div className="ps-label">Observations cliniques</div>
-        <Editable className="paper-textblock" placeholder="État psychique, comportement, éléments relevés durant l'entretien…" />
+        <Editable className="paper-textblock" field="observations_cliniques" placeholder="État psychique, comportement, éléments relevés durant l'entretien…" />
       </div>
       <div className="paper-section">
         <div className="ps-label">Conclusion &amp; recommandations</div>
-        <Editable className="paper-textblock" placeholder="Conclusion du suivi et recommandations…" />
+        <Editable className="paper-textblock" field="conclusion" placeholder="Conclusion du suivi et recommandations…" />
         <PRow label="Suivi recommandé" initial="Aucun suivi particulier" />
       </div>
     </>
@@ -134,7 +139,7 @@ function BodyPsy() {
 }
 
 function BodyOrdonnance() {
-  const [lines, setLines] = useState([0, 1, 2])
+  const [lines, setLines] = useDocField<number[]>('rx_lines', [0, 1, 2])
   return (
     <>
       <div className="paper-section"><div className="ps-label">Prescripteur</div><PRow label="Médecin prescripteur" placeholder="Dr. …" /></div>
@@ -145,13 +150,13 @@ function BodyOrdonnance() {
             <div className="rx-line" key={id}>
               <div className="rx-num">{i + 1}</div>
               <div className="rx-body">
-                <Editable className="rx-med" placeholder="Médicament, dosage" />
-                <Editable className="rx-pos" placeholder="Posologie — ex : 1 comprimé matin et soir, 7 jours" />
+                <Editable className="rx-med" field={`rx_med_${id}`} placeholder="Médicament, dosage" />
+                <Editable className="rx-pos" field={`rx_pos_${id}`} placeholder="Posologie — ex : 1 comprimé matin et soir, 7 jours" />
               </div>
             </div>
           ))}
         </div>
-        <button className="btn btn-ghost no-print" style={{ marginTop: 14 }} onClick={() => setLines([...lines, lines.length])}><Icons.plus size={15} /> Ajouter une ligne</button>
+        <button className="btn btn-ghost no-print" style={{ marginTop: 14 }} onClick={() => setLines([...lines, (lines[lines.length - 1] ?? -1) + 1])}><Icons.plus size={15} /> Ajouter une ligne</button>
       </div>
       <div className="paper-section"><PRow label="Renouvellement" initial="Non renouvelable" /></div>
     </>
@@ -171,7 +176,7 @@ function BodyArret() {
           <PRow label="Sorties autorisées" initial="Non" placeholder="Oui / Non" />
         </div>
       </div>
-      <div className="paper-section"><div className="ps-label">Motif médical</div><Editable className="paper-textblock" placeholder="Motif justifiant l'interruption temporaire de service…" /></div>
+      <div className="paper-section"><div className="ps-label">Motif médical</div><Editable className="paper-textblock" field="motif_medical" placeholder="Motif justifiant l'interruption temporaire de service…" /></div>
     </>
   )
 }
@@ -187,12 +192,12 @@ function BodyAccident() {
           <PRow label="Lieu" placeholder="Adresse / zone" />
           <PRow label="Témoin(s)" placeholder="Nom du témoin" />
         </div>
-        <div style={{ marginTop: 10 }}><Editable className="paper-textblock" placeholder="Description détaillée des circonstances de l'accident…" /></div>
+        <div style={{ marginTop: 10 }}><Editable className="paper-textblock" field="circonstances" placeholder="Description détaillée des circonstances de l'accident…" /></div>
       </div>
       <div className="paper-section">
         <div className="ps-label">Constatations médicales</div>
         <PRow label="Médecin constatant" placeholder="Dr. …" />
-        <Editable className="paper-textblock" placeholder="Lésions constatées, soins prodigués, gravité…" />
+        <Editable className="paper-textblock" field="constatations" placeholder="Lésions constatées, soins prodigués, gravité…" />
         <PRow label="Incapacité prévisible" placeholder="… jours" />
       </div>
     </>
@@ -200,7 +205,7 @@ function BodyAccident() {
 }
 
 function BodyDeces() {
-  const [obstacle, setObstacle] = useState('non')
+  const [obstacle, setObstacle] = useDocField('obstacle', 'non')
   return (
     <>
       <div className="paper-section">
@@ -212,7 +217,7 @@ function BodyDeces() {
           <PRow label="Lieu du décès" placeholder="Adresse / zone" />
         </div>
       </div>
-      <div className="paper-section"><div className="ps-label">Cause présumée du décès</div><Editable className="paper-textblock" placeholder="Cause médicale présumée du décès…" /></div>
+      <div className="paper-section"><div className="ps-label">Cause présumée du décès</div><Editable className="paper-textblock" field="cause_deces" placeholder="Cause médicale présumée du décès…" /></div>
       <div className="paper-section">
         <div className="ps-label">Obstacle médico-légal à l&apos;inhumation</div>
         <div className="verdict-box">
@@ -231,7 +236,9 @@ function BodyDeces() {
 const BODY_ZONES = [
   { key: 'tete', label: 'Tête', x: 50, y: 12, r: 9 },
   { key: 'cou', label: 'Cou', x: 50, y: 19, r: 5 },
-  { key: 'thorax', label: 'Thorax', x: 50, y: 29, r: 11 },
+  { key: 'epauleD', label: 'Épaule droite', x: 38, y: 24, r: 6 },
+  { key: 'epauleG', label: 'Épaule gauche', x: 62, y: 24, r: 6 },
+  { key: 'thorax', label: 'Thorax', x: 50, y: 30, r: 11 },
   { key: 'abdomen', label: 'Abdomen / Bassin', x: 50, y: 42, r: 11 },
   { key: 'brasD', label: 'Bras droit', x: 32.5, y: 33, r: 7 },
   { key: 'avbrasD', label: 'Avant-bras droit', x: 25, y: 45, r: 7 },
@@ -248,9 +255,9 @@ const BODY_ZONES = [
 ]
 
 function BodyRapport() {
-  const [sex, setSex] = useState<'homme' | 'femme'>('homme')
-  const [selected, setSelected] = useState<string[]>(['thorax'])
-  const toggle = (k: string) => setSelected((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]))
+  const [sex, setSex] = useDocField<'homme' | 'femme'>('sex', 'homme')
+  const [selected, setSelected] = useDocField<string[]>('zones', ['thorax'])
+  const toggle = (k: string) => setSelected(selected.includes(k) ? selected.filter((x) => x !== k) : [...selected, k])
   const src = sex === 'femme' ? '/assets/body-female.png' : '/assets/body-male.png'
   return (
     <>
@@ -281,7 +288,8 @@ function BodyRapport() {
                 <div key={z.key} className={`bp-spot ${selected.includes(z.key) ? 'sel' : ''}`} style={{ left: `${z.x}%`, top: `${z.y}%`, width: `${z.r * 2}%` }} title={z.label} onClick={() => toggle(z.key)} />
               ))}
               {selected.map((k, i) => {
-                const z = BODY_ZONES.find((b) => b.key === k)!
+                const z = BODY_ZONES.find((b) => b.key === k)
+                if (!z) return null
                 return <div key={'pin' + k} className="bp-pin" style={{ left: `${z.x}%`, top: `${z.y}%` }}>{i + 1}</div>
               })}
             </div>
@@ -289,13 +297,14 @@ function BodyRapport() {
           <div className="body-detail">
             {selected.length === 0 && <div className="zone-empty">Aucune zone sélectionnée. Cliquez sur le schéma.</div>}
             {selected.map((k, i) => {
-              const z = BODY_ZONES.find((b) => b.key === k)!
+              const z = BODY_ZONES.find((b) => b.key === k)
+              if (!z) return null
               return (
                 <div className="zone-row" key={k}>
                   <div className="zone-num">{i + 1}</div>
                   <div className="zr-body">
                     <div className="zr-label">{z.label}</div>
-                    <Editable className="zr-detail" placeholder="Décrire la lésion / le geste opératoire…" />
+                    <Editable className="zr-detail" field={`zone_${k}`} placeholder="Décrire la lésion / le geste opératoire…" />
                   </div>
                   <div className="zone-rm no-print" onClick={() => toggle(k)} title="Retirer"><Icons.x size={14} /></div>
                 </div>
@@ -306,7 +315,7 @@ function BodyRapport() {
       </div>
       <div className="paper-section">
         <div className="ps-label">Suites &amp; recommandations post-opératoires</div>
-        <Editable className="paper-textblock" placeholder="Soins de suite, traitement prescrit, surveillance, prochain contrôle…" />
+        <Editable className="paper-textblock" field="postop" placeholder="Soins de suite, traitement prescrit, surveillance, prochain contrôle…" />
       </div>
     </>
   )
@@ -314,12 +323,12 @@ function BodyRapport() {
 
 /* ---- Fiche bilan secours ---- */
 function BR({ label, initial, ph }: { label: string; initial?: string; ph?: string }) {
-  return <div className="brow"><div className="bl">{label}</div><Editable className="bv" initial={initial} placeholder={ph || '…'} /></div>
+  return <div className="brow"><div className="bl">{label}</div><Editable className="bv" field={slug(label)} initial={initial} placeholder={ph || '…'} /></div>
 }
 function BodyBilan() {
-  const [g, setG] = useState<Record<string, boolean>>({})
+  const [g, setG] = useDocField<Record<string, boolean>>('gestes', {})
   const Chk = ({ k, label }: { k: string; label: string }) => (
-    <div className="bchk-row" onClick={() => setG((p) => ({ ...p, [k]: !p[k] }))}>
+    <div className="bchk-row" onClick={() => setG({ ...g, [k]: !g[k] })}>
       <span className={`bchk ${g[k] ? 'on' : ''}`}>{g[k] ? '✓' : ''}</span>{label}
     </div>
   )
@@ -354,7 +363,7 @@ function BodyBilan() {
         <BR label="Maladies" /><BR label="Hospitalisations" /><BR label="Traitements" /><BR label="Allergies" />
       </div>
       <div className="bilan-sec span2"><div className="bsec-h c-indigo">Rapport d&apos;intervention</div>
-        <Editable className="paper-textblock" placeholder="Déroulé de l'intervention, transmissions, suites…" />
+        <Editable className="paper-textblock" field="rapport_intervention" placeholder="Déroulé de l'intervention, transmissions, suites…" />
       </div>
     </div>
   )
@@ -362,7 +371,7 @@ function BodyBilan() {
 
 /* ---- Rapport d'imagerie ---- */
 function BodyImagerie() {
-  const [sel, setSel] = useState<{ type: string; src: string } | null>(null)
+  const [sel, setSel] = useDocField<{ type: string; src: string } | null>('exam', null)
   return (
     <>
       <div className="paper-section">
@@ -388,8 +397,8 @@ function BodyImagerie() {
           <div className="imagerie-empty no-print">Aucun cliché sélectionné — choisissez un examen ci-dessus.</div>
         )}
       </div>
-      <div className="paper-section"><div className="ps-label">Interprétation</div><Editable className="paper-textblock" placeholder="Description des structures, anomalies constatées…" /></div>
-      <div className="paper-section"><div className="ps-label">Conclusion</div><Editable className="paper-textblock" placeholder="Conclusion radiologique…" /><PRow label="Radiologue" placeholder="Dr. …" /></div>
+      <div className="paper-section"><div className="ps-label">Interprétation</div><Editable className="paper-textblock" field="interpretation" placeholder="Description des structures, anomalies constatées…" /></div>
+      <div className="paper-section"><div className="ps-label">Conclusion</div><Editable className="paper-textblock" field="conclusion" placeholder="Conclusion radiologique…" /><PRow label="Radiologue" placeholder="Dr. …" /></div>
     </>
   )
 }
@@ -399,11 +408,39 @@ const DOC_BODIES: Record<string, () => React.JSX.Element> = {
   accident: BodyAccident, deces: BodyDeces, rapport: BodyRapport, bilan: BodyBilan, imagerie: BodyImagerie,
 }
 
-export default function DocPaper({ type, patient, user }: { type: string; patient: Patient | null; user?: CurrentMember }) {
+export default function DocPaper({
+  type,
+  patient,
+  user,
+  content,
+  contentRef,
+}: {
+  type: string
+  patient: Patient | null
+  user?: CurrentMember
+  /** Contenu déjà sauvegardé pour ré-hydrater un document rattaché. */
+  content?: DocStore
+  /** Reçoit le store de contenu vivant — le parent le lit à l'enregistrement. */
+  contentRef?: React.MutableRefObject<DocStore>
+}) {
+  const storeRef = useRef<DocStore>(content ? { ...content } : {})
+  // Expose le store vivant au parent (même référence d'objet, idempotent).
+  if (contentRef) contentRef.current = storeRef.current
+
+  const ctx = useMemo<DocContentCtx>(
+    () => ({
+      initial: content || {},
+      set: (k, v) => { storeRef.current[k] = v },
+    }),
+    [content]
+  )
+
   const Body = DOC_BODIES[type] || (() => null)
   return (
-    <PaperShell type={type} patient={patient} user={user}>
-      <Body />
-    </PaperShell>
+    <DocContentContext.Provider value={ctx}>
+      <PaperShell type={type} patient={patient} user={user}>
+        <Body />
+      </PaperShell>
+    </DocContentContext.Provider>
   )
 }
