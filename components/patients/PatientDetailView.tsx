@@ -42,7 +42,8 @@ const todayFull = () => {
 
 export default function PatientDetailView({ initialPatient }: { initialPatient: Patient }) {
   const router = useRouter()
-  const { can, isAdmin } = useApp()
+  const { can, isAdmin, canEdit } = useApp()
+  const editable = canEdit('patients')
   const [patient, setPatient] = useState<Patient>(initialPatient)
   useEffect(() => setPatient(initialPatient), [initialPatient])
 
@@ -144,11 +145,13 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
         <div className="dt-back" onClick={() => router.push('/patients')}><Icons.arrowL size={16} /> Retour aux patients</div>
         <div className="spacer"></div>
         <button className="btn btn-ghost" onClick={() => setModal('summary')}><Icons.download size={14} /> Exporter le dossier</button>
-        {patient.status !== 'deces' && can('declareDeath') && (
+        {editable && patient.status !== 'deces' && can('declareDeath') && (
           <button className="btn btn-ghost" style={{ color: 'var(--crit)' }} onClick={() => setConfirmDeath(true)}><Icons.cross size={14} /> Déclarer décédé</button>
         )}
-        <button className="btn btn-ghost" onClick={() => setEditOpen(true)}><Icons.edit size={14} /> Modifier</button>
-        {can('deletePatient') && (
+        {editable && (
+          <button className="btn btn-ghost" onClick={() => setEditOpen(true)}><Icons.edit size={14} /> Modifier</button>
+        )}
+        {editable && can('deletePatient') && (
           <button className="btn-revoke" onClick={() => setConfirmDel(true)}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Supprimer</button>
         )}
       </div>
@@ -225,7 +228,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
             <div className="vital"><div className="vl">SpO₂</div><div className="vv">{patient.vitals.spo2}<small> %</small></div></div>
             <div className="vital"><div className="vl">Temp.</div><div className="vv">{patient.vitals.temp}<small> °C</small></div></div>
           </div></div></Card>
-          <Card style={{ gridColumn: '1 / -1' }}><div className="card-head"><h3>Rendez-vous ({sortedAppts.length})</h3><div className="spacer"></div><button className="btn btn-ghost" onClick={() => setModal('appt')}><Icons.plus size={13} /> Fixer un rendez-vous</button></div>
+          <Card style={{ gridColumn: '1 / -1' }}><div className="card-head"><h3>Rendez-vous ({sortedAppts.length})</h3><div className="spacer"></div>{editable && <button className="btn btn-ghost" onClick={() => setModal('appt')}><Icons.plus size={13} /> Fixer un rendez-vous</button>}</div>
             <div>
               {sortedAppts.length === 0 && <div style={{ padding: 22, textAlign: 'center', color: 'var(--ink-500)', fontSize: 13 }}>Aucun rendez-vous planifié.</div>}
               {sortedAppts.map((a) => <div className="doc-row" key={a.id}><div className="dr-ico"><Icons.calendar size={18} /></div><div className="dr-i"><b>{a.reason}</b><span>{a.date} · {a.time} · {a.doctor}</span></div><button className="btn btn-ghost" onClick={() => setRdvCard(a)}><Icons.idcard size={14} /> Carte RDV</button></div>)}
@@ -237,12 +240,12 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {/* ===== Suivi ===== */}
       {tab === 'suivi' && (
         <div className="view-anim">
-          <SecTitle action={<button className="btn btn-gold" onClick={() => setModal('history')}><Icons.plus size={14} /> Ajouter au suivi</button>}>Historique médical</SecTitle>
+          <SecTitle action={editable ? <button className="btn btn-gold" onClick={() => setModal('history')}><Icons.plus size={14} /> Ajouter au suivi</button> : undefined}>Historique médical</SecTitle>
           <Card className="card-pad">
             {(patient.history || []).length === 0 && <p style={{ color: 'var(--ink-500)', fontSize: 13.5, padding: 16, textAlign: 'center' }}>Aucun historique.</p>}
             <div className="timeline">
               {(patient.history || []).map((h, i) => (
-                <div className="tl-item" key={i}><div className="tl-dot"><Icons.pulse size={13} /></div><div className="tl-body" style={{ display: 'flex', alignItems: 'flex-start' }}><div style={{ flex: 1 }}><p><b>{h.type}</b> — {h.text}</p><div className="t">{h.date} · {h.author}</div></div>{canDel && <div className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} title="Supprimer (Direction)" onClick={() => delHistory(i)}><Icons.trash size={13} /></div>}</div></div>
+                <div className="tl-item" key={i}><div className="tl-dot"><Icons.pulse size={13} /></div><div className="tl-body" style={{ display: 'flex', alignItems: 'flex-start' }}><div style={{ flex: 1 }}><p><b>{h.type}</b> — {h.text}</p><div className="t">{h.date} · {h.author}</div></div>{editable && canDel && <div className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} title="Supprimer (Direction)" onClick={() => delHistory(i)}><Icons.trash size={13} /></div>}</div></div>
               ))}
             </div>
           </Card>
@@ -252,20 +255,20 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {/* ===== Antécédents & traitements ===== */}
       {tab === 'antecedents' && (
         <div className="view-anim" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, alignItems: 'start' }}>
-          <Card><div className="card-head"><h3>Antécédents</h3>{canDel && <><div className="spacer"></div><button className="btn-revoke" onClick={() => { setAnt(''); persist({ antecedents: '' }) }}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Effacer</button></>}</div><div className="card-pad">
-            <textarea value={ant} onChange={(e) => setAnt(e.target.value)} onBlur={() => persist({ antecedents: ant })} className="ptextarea" placeholder="Pathologies, opérations passées, allergies, vaccins…" />
-            <button className="btn btn-ghost" style={{ marginTop: 10 }} onClick={() => persist({ antecedents: ant })}><Icons.check size={13} /> Enregistrer</button>
+          <Card><div className="card-head"><h3>Antécédents</h3>{editable && canDel && <><div className="spacer"></div><button className="btn-revoke" onClick={() => { setAnt(''); persist({ antecedents: '' }) }}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Effacer</button></>}</div><div className="card-pad">
+            <textarea value={ant} onChange={(e) => setAnt(e.target.value)} onBlur={() => persist({ antecedents: ant })} className="ptextarea" placeholder="Pathologies, opérations passées, allergies, vaccins…" readOnly={!editable} />
+            {editable && <button className="btn btn-ghost" style={{ marginTop: 10 }} onClick={() => persist({ antecedents: ant })}><Icons.check size={13} /> Enregistrer</button>}
           </div></Card>
-          <Card><div className="card-head"><h3>Traitements en cours</h3><div className="spacer"></div><button className="btn btn-ghost" onClick={addTreatment}><Icons.plus size={13} /> Ajouter</button></div><div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Card><div className="card-head"><h3>Traitements en cours</h3><div className="spacer"></div>{editable && <button className="btn btn-ghost" onClick={addTreatment}><Icons.plus size={13} /> Ajouter</button>}</div><div className="card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(patient.treatments || []).length === 0 && <p style={{ color: 'var(--ink-500)', fontSize: 13 }}>Aucun traitement.</p>}
             {(patient.treatments || []).map((t, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--navy-800)', borderRadius: 9, padding: 8, border: '1px solid var(--navy-line-soft)' }}>
                 <Icons.pill size={16} style={{ color: 'var(--gold-400)', flex: '0 0 auto' }} />
                 <div style={{ flex: 1 }}>
-                  <input value={t.name} onChange={(e) => setTreatment(i, 'name', e.target.value)} className="tinput b" />
-                  <input value={t.pos} onChange={(e) => setTreatment(i, 'pos', e.target.value)} className="tinput" />
+                  <input value={t.name} onChange={(e) => setTreatment(i, 'name', e.target.value)} className="tinput b" readOnly={!editable} />
+                  <input value={t.pos} onChange={(e) => setTreatment(i, 'pos', e.target.value)} className="tinput" readOnly={!editable} />
                 </div>
-                <div className="icon-btn" style={{ width: 30, height: 30 }} onClick={() => delTreatment(i)}><Icons.trash size={13} /></div>
+                {editable && <div className="icon-btn" style={{ width: 30, height: 30 }} onClick={() => delTreatment(i)}><Icons.trash size={13} /></div>}
               </div>
             ))}
           </div></Card>
@@ -275,10 +278,10 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {/* ===== Constantes ===== */}
       {tab === 'constantes' && (
         <div className="view-anim">
-          <SecTitle action={<button className="btn btn-gold" onClick={() => setModal('vitals')}><Icons.plus size={14} /> Nouveau relevé</button>}>Évolution des constantes</SecTitle>
+          <SecTitle action={editable ? <button className="btn btn-gold" onClick={() => setModal('vitals')}><Icons.plus size={14} /> Nouveau relevé</button> : undefined}>Évolution des constantes</SecTitle>
           <Card className="card-pad" style={{ marginBottom: 18 }}><VitalsChart data={patient.vitals_history || []} /></Card>
-          <Card><table className="tbl"><thead><tr><th>Date</th><th>Tension</th><th>FC</th><th>SpO₂</th><th>Temp.</th>{canDel && <th></th>}</tr></thead><tbody>
-            {[...(patient.vitals_history || [])].reverse().map((v, i) => <tr key={i}><td>{v.date}</td><td>{v.tension}</td><td>{v.fc} bpm</td><td>{v.spo2}%</td><td>{v.temp}°C</td>{canDel && <td style={{ textAlign: 'right' }}><div className="icon-btn" style={{ width: 30, height: 30, marginLeft: 'auto' }} title="Supprimer (Direction)" onClick={() => delVital(i)}><Icons.trash size={13} /></div></td>}</tr>)}
+          <Card><table className="tbl"><thead><tr><th>Date</th><th>Tension</th><th>FC</th><th>SpO₂</th><th>Temp.</th>{editable && canDel && <th></th>}</tr></thead><tbody>
+            {[...(patient.vitals_history || [])].reverse().map((v, i) => <tr key={i}><td>{v.date}</td><td>{v.tension}</td><td>{v.fc} bpm</td><td>{v.spo2}%</td><td>{v.temp}°C</td>{editable && canDel && <td style={{ textAlign: 'right' }}><div className="icon-btn" style={{ width: 30, height: 30, marginLeft: 'auto' }} title="Supprimer (Direction)" onClick={() => delVital(i)}><Icons.trash size={13} /></div></td>}</tr>)}
           </tbody></table></Card>
         </div>
       )}
@@ -286,7 +289,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {/* ===== Rendez-vous ===== */}
       {tab === 'rdv' && (
         <div className="view-anim">
-          <SecTitle action={<button className="btn btn-gold" onClick={() => setModal('appt')}><Icons.plus size={14} /> Fixer un rendez-vous</button>}>Rendez-vous</SecTitle>
+          <SecTitle action={editable ? <button className="btn btn-gold" onClick={() => setModal('appt')}><Icons.plus size={14} /> Fixer un rendez-vous</button> : undefined}>Rendez-vous</SecTitle>
           <Card>
             {(patient.appointments || []).length === 0 && <p style={{ color: 'var(--ink-500)', fontSize: 13.5, padding: 30, textAlign: 'center' }}>Aucun rendez-vous. « Fixer un rendez-vous » génère une carte à remettre au patient et l&apos;ajoute au calendrier.</p>}
             {sortedAppts.map((a) => (
@@ -294,7 +297,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                 <div className="dr-ico"><Icons.calendar size={19} /></div>
                 <div className="dr-i"><b>{a.reason}</b><span>{a.date} · {a.time} · {a.doctor} · {a.place}</span></div>
                 <button className="btn btn-ghost" onClick={() => setRdvCard(a)}><Icons.idcard size={14} /> Carte RDV</button>
-                {canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delAppt(a.id)}><Icons.trash size={15} /></div>}
+                {editable && canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delAppt(a.id)}><Icons.trash size={15} /></div>}
               </div>
             ))}
           </Card>
@@ -304,7 +307,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
       {/* ===== Documents ===== */}
       {tab === 'documents' && (
         <div className="view-anim">
-          <SecTitle action={<div style={{ display: 'flex', gap: 8 }}><label className="btn btn-ghost" style={{ cursor: 'pointer' }}><Icons.upload size={14} /> Importer<input type="file" style={{ display: 'none' }} onChange={(e) => onUploadDoc(e.target.files?.[0])} /></label><button className="btn btn-gold" onClick={goDocuments}><Icons.plus size={14} /> Générer</button></div>}>Documents médicaux</SecTitle>
+          <SecTitle action={editable ? <div style={{ display: 'flex', gap: 8 }}><label className="btn btn-ghost" style={{ cursor: 'pointer' }}><Icons.upload size={14} /> Importer<input type="file" style={{ display: 'none' }} onChange={(e) => onUploadDoc(e.target.files?.[0])} /></label><button className="btn btn-gold" onClick={goDocuments}><Icons.plus size={14} /> Générer</button></div> : undefined}>Documents médicaux</SecTitle>
           <Card>
             {(patient.docs || []).length === 0 && <p style={{ color: 'var(--ink-500)', fontSize: 13.5, padding: 30, textAlign: 'center' }}>Aucun document. « Générer » une pièce ou « Importer » un fichier.</p>}
             {(patient.docs || []).map((d) => {
@@ -326,7 +329,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                   ) : (
                     <button className="icon-btn" style={{ width: 34, height: 34 }} title="Aperçu" onClick={() => setViewDoc(d)}><Icons.eye size={16} /></button>
                   )}
-                  {canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delDoc(d.id)}><Icons.trash size={15} /></div>}
+                  {editable && canDel && <div className="icon-btn" style={{ width: 34, height: 34 }} title="Supprimer (Direction)" onClick={() => delDoc(d.id)}><Icons.trash size={15} /></div>}
                 </div>
               )
             })}
@@ -341,7 +344,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
         const shown = imgFilter === 'tous' ? imgs : imgs.filter((im) => (im.type || 'Autre') === imgFilter)
         return (
           <div className="view-anim">
-            <SecTitle action={<div style={{ display: 'flex', gap: 8 }}><label className="btn btn-ghost" style={{ cursor: 'pointer' }}><Icons.upload size={14} /> Importer<input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUploadImg(e.target.files?.[0])} /></label><button className="btn btn-gold" onClick={() => setModal('imaging')}><Icons.plus size={14} /> Ajouter un cliché</button></div>}>Imagerie &amp; photos de blessures</SecTitle>
+            <SecTitle action={editable ? <div style={{ display: 'flex', gap: 8 }}><label className="btn btn-ghost" style={{ cursor: 'pointer' }}><Icons.upload size={14} /> Importer<input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUploadImg(e.target.files?.[0])} /></label><button className="btn btn-gold" onClick={() => setModal('imaging')}><Icons.plus size={14} /> Ajouter un cliché</button></div> : undefined}>Imagerie &amp; photos de blessures</SecTitle>
             {imgs.length > 0 && <div className="chips" style={{ marginBottom: 16 }}>{types.map((t) => <div key={t} className={`chip ${imgFilter === t ? 'on' : ''}`} onClick={() => setImgFilter(t)}>{t === 'tous' ? 'Tous' : t}</div>)}</div>}
             {imgs.length === 0 ? (
               <Card className="card-pad"><p style={{ color: 'var(--ink-500)', fontSize: 13.5, textAlign: 'center', padding: 20 }}>Aucun cliché. Ajoutez des radios (poumons, thorax, bras, jambe…), scanners, photos de plaies…</p></Card>
@@ -352,7 +355,7 @@ export default function PatientDetailView({ initialPatient }: { initialPatient: 
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={im.src} alt={im.label} /><span className="img-type">{im.type || 'Cliché'}</span>
                   </div>
-                  <div className="img-cap"><span style={{ color: 'var(--ink-200)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{im.label}</span><a className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} href={im.src} download={`${im.label || 'imagerie'}.png`} title="Télécharger"><Icons.download size={14} /></a>{canDel && <div className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} title="Supprimer (Direction)" onClick={() => delImage(im.id)}><Icons.trash size={13} /></div>}</div>
+                  <div className="img-cap"><span style={{ color: 'var(--ink-200)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{im.label}</span><a className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} href={im.src} download={`${im.label || 'imagerie'}.png`} title="Télécharger"><Icons.download size={14} /></a>{editable && canDel && <div className="icon-btn" style={{ width: 28, height: 28, flex: '0 0 28px' }} title="Supprimer (Direction)" onClick={() => delImage(im.id)}><Icons.trash size={13} /></div>}</div>
                 </div>
               ))}</div>
             )}

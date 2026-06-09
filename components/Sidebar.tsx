@@ -13,7 +13,7 @@ import { compressImage } from '@/lib/image'
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { member, grade, setGrade, realGrade, isAdmin, reqCount } = useApp()
+  const { member, grade, setGrade, realGrade, access, reqCount } = useApp()
   const [photo, setPhoto] = useState<string | null>(member.photo)
 
   const isActive = (route: string) =>
@@ -49,11 +49,13 @@ export default function Sidebar() {
       </div>
 
       <nav className="nav">
-        {NAV.map((grp) => (
+        {NAV.map((grp) => {
+          const items = grp.items.filter((it) => access(it.key) !== 'none')
+          if (items.length === 0) return null
+          return (
           <div key={grp.group}>
             <div className="nav-group-label">{grp.group}</div>
-            {grp.items
-              .filter((it) => !it.admin || isAdmin)
+            {items
               .map((it) => {
                 const I = Icons[it.icon]
                 const count = it.badge === 'reqCount' ? reqCount : 0
@@ -70,7 +72,8 @@ export default function Sidebar() {
                 )
               })}
           </div>
-        ))}
+          )
+        })}
       </nav>
 
       <div className="sidebar-foot">

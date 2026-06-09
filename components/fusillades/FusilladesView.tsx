@@ -38,7 +38,8 @@ function GtaMap({ marker, onPick, max = 560 }: { marker?: { x: number | null; y:
 export default function FusilladesView({ fusillades: initial, patients }: { fusillades: Fusillade[]; patients: Patient[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { search, isAdmin } = useApp()
+  const { search, isAdmin, canEdit } = useApp()
+  const editable = canEdit('fusillade')
   useRealtime('fusillades')
   const [fusillades, setFusillades] = useState(initial)
   useEffect(() => setFusillades(initial), [initial])
@@ -85,6 +86,7 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
           fus={current}
           patients={patients}
           isAdmin={isAdmin}
+          editable={editable}
           onBack={() => setSel(null)}
           onUpdate={update}
           onDelete={() => setConfirmDel(current)}
@@ -106,7 +108,7 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
     <div className="view-anim">
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
         <div style={{ fontSize: 13.5, color: 'var(--ink-400)' }}><b style={{ color: 'var(--crit)' }}>{enCours}</b> intervention(s) en cours · partagé avec tout le service</div>
-        <div style={{ marginLeft: 'auto' }}><button className="btn btn-gold" onClick={() => setAddF(true)}><Icons.target size={16} /> Nouvelle fusillade</button></div>
+        {editable && <div style={{ marginLeft: 'auto' }}><button className="btn btn-gold" onClick={() => setAddF(true)}><Icons.target size={16} /> Nouvelle fusillade</button></div>}
       </div>
 
       <div className="fus-grid">
@@ -115,7 +117,7 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
           const urgent = (f.wounded || []).filter((w) => w.triage === 'urgent').length
           return (
             <Card key={f.id} className="fus-card" onClick={() => setSel(f.id)} style={{ position: 'relative' }}>
-              {isAdmin && (
+              {isAdmin && editable && (
                 <div className="fus-del" title="Supprimer la fusillade" onClick={(e) => { e.stopPropagation(); setConfirmDel(f) }}>
                   <Icons.trash size={15} />
                 </div>
@@ -149,10 +151,11 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
   )
 }
 
-function FusilladeDetail({ fus, patients, isAdmin, onBack, onUpdate, onDelete, onCreatePatient, onOpenPatient }: {
+function FusilladeDetail({ fus, patients, isAdmin, editable, onBack, onUpdate, onDelete, onCreatePatient, onOpenPatient }: {
   fus: Fusillade
   patients: Patient[]
   isAdmin: boolean
+  editable: boolean
   onBack: () => void
   onUpdate: (f: Fusillade, patch: Partial<Pick<Fusillade, 'status' | 'wounded'>>) => void
   onDelete: () => void
@@ -172,9 +175,9 @@ function FusilladeDetail({ fus, patients, isAdmin, onBack, onUpdate, onDelete, o
       <div className="doc-toolbar">
         <div className="dt-back" onClick={onBack}><Icons.arrowL size={16} /> Toutes les fusillades</div>
         <div className="spacer"></div>
-        <button className="btn btn-ghost" onClick={toggleStatus}>{fus.status === 'en cours' ? <><Icons.check size={14} /> Clôturer</> : <><Icons.pulse size={14} /> Rouvrir</>}</button>
-        <button className="btn btn-gold" onClick={() => setAddW(true)}><Icons.plus size={15} /> Ajouter un blessé</button>
-        {isAdmin && <button className="btn-revoke" onClick={onDelete}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Supprimer</button>}
+        {editable && <button className="btn btn-ghost" onClick={toggleStatus}>{fus.status === 'en cours' ? <><Icons.check size={14} /> Clôturer</> : <><Icons.pulse size={14} /> Rouvrir</>}</button>}
+        {editable && <button className="btn btn-gold" onClick={() => setAddW(true)}><Icons.plus size={15} /> Ajouter un blessé</button>}
+        {isAdmin && editable && <button className="btn-revoke" onClick={onDelete}><Icons.trash size={13} style={{ verticalAlign: -2 }} /> Supprimer</button>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
@@ -219,10 +222,10 @@ function FusilladeDetail({ fus, patients, isAdmin, onBack, onUpdate, onDelete, o
                       {w.patientId ? (
                         <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => onOpenPatient(w.patientId!)}><Icons.patient size={13} /> Dossier</button>
                       ) : (
-                        <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => onCreatePatient(w)}><Icons.plus size={13} /> Créer le dossier</button>
+                        editable && <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => onCreatePatient(w)}><Icons.plus size={13} /> Créer le dossier</button>
                       )}
                       <div className="spacer" style={{ flex: 1 }}></div>
-                      <div className="icon-btn" style={{ width: 32, height: 32 }} title="Retirer" onClick={() => delWounded(w.id)}><Icons.trash size={14} /></div>
+                      {editable && <div className="icon-btn" style={{ width: 32, height: 32 }} title="Retirer" onClick={() => delWounded(w.id)}><Icons.trash size={14} /></div>}
                     </div>
                   </div>
                 </Card>

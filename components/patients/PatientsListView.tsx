@@ -19,7 +19,8 @@ const FILTERS: [string, string][] = [
 
 export default function PatientsListView({ patients }: { patients: Patient[] }) {
   const router = useRouter()
-  const { search } = useApp()
+  const { search, canEdit } = useApp()
+  const editable = canEdit('patients')
   const [filter, setFilter] = useState('tous')
   const [add, setAdd] = useState(false)
 
@@ -41,11 +42,13 @@ export default function PatientsListView({ patients }: { patients: Patient[] }) 
             </div>
           ))}
         </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="btn btn-gold" onClick={() => setAdd(true)}>
-            <Icons.plus size={16} /> Nouveau patient
-          </button>
-        </div>
+        {editable && (
+          <div style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-gold" onClick={() => setAdd(true)}>
+              <Icons.plus size={16} /> Nouveau patient
+            </button>
+          </div>
+        )}
       </div>
       <Card>
         <table className="tbl">

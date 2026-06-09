@@ -24,7 +24,8 @@ export default function DocViewer({
   onClose: () => void
   onSaved?: () => void
 }) {
-  const { member } = useApp()
+  const { member, canEdit } = useApp()
+  const editable = canEdit('documents')
   const [toast, setToast] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const contentRef = useRef<Record<string, unknown>>({ ...(doc.content || {}) })
@@ -51,9 +52,11 @@ export default function DocViewer({
         </div>
         <div style={{ display: 'flex', gap: 10, paddingBottom: 8 }}>
           <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
-          <button className="btn btn-ghost" style={{ color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' }} onClick={save} disabled={saving}>
-            <Icons.check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
-          </button>
+          {editable && (
+            <button className="btn btn-ghost" style={{ color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' }} onClick={save} disabled={saving}>
+              <Icons.check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
+            </button>
+          )}
           <button className="btn btn-gold" onClick={() => exportPng('sams-paper', `SAMS_${doc.type}_${patient.last_name}`, flash)}>
             <Icons.download size={15} /> Télécharger (PNG)
           </button>

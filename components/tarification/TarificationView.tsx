@@ -22,7 +22,8 @@ const fmtPrice = (n: number) => Number(n || 0).toLocaleString('fr-FR').replace(/
 
 export default function TarificationView({ tarifs }: { tarifs: TarifRow[] }) {
   const router = useRouter()
-  const { isAdmin } = useApp()
+  const { canEdit } = useApp()
+  const editable = canEdit('tarification')
   const [edit, setEdit] = useState<TarifRow | 'new' | null>(null)
 
   return (
@@ -31,7 +32,7 @@ export default function TarificationView({ tarifs }: { tarifs: TarifRow[] }) {
         <div style={{ fontSize: 13.5, color: 'var(--ink-400)' }}>
           Fiche de prix des prestations · <b style={{ color: 'var(--gold-300)' }}>{tarifs.length}</b> lignes · tarifs en dollars ($)
         </div>
-        {isAdmin && (
+        {editable && (
           <button className="btn-neon-gold" style={{ marginLeft: 'auto' }} onClick={() => setEdit('new')}>
             <Icons.plus size={16} /> Ajouter une prestation
           </button>
@@ -43,14 +44,14 @@ export default function TarificationView({ tarifs }: { tarifs: TarifRow[] }) {
           <div className="tt-c-ico"></div>
           <div>Prestation</div>
           <div className="tt-c-price">Tarif</div>
-          {isAdmin && <div className="tt-c-act"></div>}
+          {editable && <div className="tt-c-act"></div>}
         </div>
         {tarifs.map((t, i) => (
           <div className={`tt-row ${i % 2 ? 'blue' : 'gold'}`} key={t.id}>
             <div className="tt-c-ico"><div className="tt-ico"><TarifIcon kind={t.icon} /></div></div>
             <div className="tt-name">{t.label}{t.sub && <span className="tt-sub">{t.sub}</span>}</div>
             <div className="tt-c-price"><span className="tt-price">{fmtPrice(t.price)} <span className="tt-cur">$</span></span></div>
-            {isAdmin && <div className="tt-c-act"><div className="icon-btn" style={{ width: 32, height: 32 }} title="Modifier" onClick={() => setEdit(t)}><Icons.edit size={14} /></div></div>}
+            {editable && <div className="tt-c-act"><div className="icon-btn" style={{ width: 32, height: 32 }} title="Modifier" onClick={() => setEdit(t)}><Icons.edit size={14} /></div></div>}
           </div>
         ))}
         <div className="tt-foot"><Icons.shield size={13} /> Les tarifs sont indiqués en dollars américains ($).</div>

@@ -1,10 +1,13 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { getServerAccess } from '@/lib/auth'
+import Restricted from '@/components/Restricted'
 import FormationsView from '@/components/formations/FormationsView'
 import type { Member, FormationRow } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
 export default async function FormationsPage() {
+  if ((await getServerAccess('formations')) === 'none') return <Restricted />
   const admin = createServiceClient()
   const [{ data: members }, { data: formations }] = await Promise.all([
     admin.from('members').select('*').order('created_at', { ascending: true }),

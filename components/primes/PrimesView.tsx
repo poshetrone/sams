@@ -12,9 +12,10 @@ import type { Member } from '@/lib/types'
 
 export default function PrimesView({ members: initial }: { members: Member[] }) {
   const router = useRouter()
-  const { can, search } = useApp()
-  const canEdit = can('manageStaff')
-  const canReset = can('resetPrime')
+  const { can, search, canEdit: canEditCat } = useApp()
+  const editable = canEditCat('primes')
+  const canEdit = can('manageStaff') && editable
+  const canReset = can('resetPrime') && editable
   const [members, setMembers] = useState(initial)
   useEffect(() => setMembers(initial), [initial])
   const [confirmReset, setConfirmReset] = useState(false)

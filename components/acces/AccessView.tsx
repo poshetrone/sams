@@ -14,7 +14,8 @@ const gradeOpts = Object.entries(GRADES).sort((a, b) => b[1].rank - a[1].rank)
 
 export default function AccessView({ requests, members }: { requests: Access[]; members: Member[] }) {
   const router = useRouter()
-  const { member: me, isAdmin } = useApp()
+  const { member: me, canEdit } = useApp()
+  const editable = canEdit('access')
   const [toast, setToast] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [linkForm, setLinkForm] = useState({ memberId: '', discordId: '', grade: 'ambulancier' })
@@ -24,16 +25,6 @@ export default function AccessView({ requests, members }: { requests: Access[]; 
   const pickMember = (id: string) => {
     const m = members.find((x) => x.id === id)
     setLinkForm({ memberId: id, discordId: m?.discord_id || '', grade: m?.grade || 'ambulancier' })
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="placeholder-view view-anim">
-        <div className="pv-ico"><Icons.lock size={28} /></div>
-        <h3>Accès restreint</h3>
-        <p>La gestion des accès est réservée à la Direction (Directeur, Co-Directeur, Direction Générale).</p>
-      </div>
-    )
   }
 
   const accept = async (r: Access) => {
@@ -88,39 +79,43 @@ export default function AccessView({ requests, members }: { requests: Access[]; 
               <span className="disc"> · <Icons.discord size={12} style={{ verticalAlign: -1, color: '#5865F2' }} /> {r.discord}</span>
               <div className="meta">{r.note}</div>
             </div>
-            <div className="req-actions">
-              <button className="btn-refuse" onClick={() => refuse(r)} disabled={busy}><Icons.x size={15} /> Refuser</button>
-              <button className="btn-accept" onClick={() => accept(r)} disabled={busy}><Icons.check size={15} /> Accepter</button>
-            </div>
+            {editable && (
+              <div className="req-actions">
+                <button className="btn-refuse" onClick={() => refuse(r)} disabled={busy}><Icons.x size={15} /> Refuser</button>
+                <button className="btn-accept" onClick={() => accept(r)} disabled={busy}><Icons.check size={15} /> Accepter</button>
+              </div>
+            )}
           </div>
         ))}
       </Card>
 
       <SecTitle>Comptes Discord autorisés</SecTitle>
 
-      <div className="acc-addform" style={{ marginBottom: 18 }}>
-        <div className="acc-add-head"><Icons.discord size={18} style={{ color: '#5865F2' }} /> <b>Pré-ajouter un accès</b></div>
-        <div className="acc-add-grid" style={{ gridTemplateColumns: '1.4fr 1fr 1fr auto' }}>
-          <div className="ep-field">
-            <label>Employé</label>
-            <select className="acc-select" style={{ width: '100%', maxWidth: 'none' }} value={linkForm.memberId} onChange={(e) => pickMember(e.target.value)}>
-              <option value="">— Choisir un employé —</option>
-              {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
+      {editable && (
+        <div className="acc-addform" style={{ marginBottom: 18 }}>
+          <div className="acc-add-head"><Icons.discord size={18} style={{ color: '#5865F2' }} /> <b>Pré-ajouter un accès</b></div>
+          <div className="acc-add-grid" style={{ gridTemplateColumns: '1.4fr 1fr 1fr auto' }}>
+            <div className="ep-field">
+              <label>Employé</label>
+              <select className="acc-select" style={{ width: '100%', maxWidth: 'none' }} value={linkForm.memberId} onChange={(e) => pickMember(e.target.value)}>
+                <option value="">— Choisir un employé —</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div className="ep-field">
+              <label>ID Discord (snowflake)</label>
+              <input value={linkForm.discordId} onChange={(e) => setLinkForm((p) => ({ ...p, discordId: e.target.value.replace(/\D/g, '') }))} placeholder="184920113377091584" />
+            </div>
+            <div className="ep-field">
+              <label>Grade</label>
+              <select className="acc-select" style={{ width: '100%', maxWidth: 'none' }} value={linkForm.grade} onChange={(e) => setLinkForm((p) => ({ ...p, grade: e.target.value }))}>
+                {gradeOpts.map(([k, gg]) => <option key={k} value={k}>{gg.label}</option>)}
+              </select>
+            </div>
+            <button className="btn-neon-gold acc-authorize" onClick={doLink} disabled={busy}><Icons.check size={16} /> Rattacher</button>
           </div>
-          <div className="ep-field">
-            <label>ID Discord (snowflake)</label>
-            <input value={linkForm.discordId} onChange={(e) => setLinkForm((p) => ({ ...p, discordId: e.target.value.replace(/\D/g, '') }))} placeholder="184920113377091584" />
-          </div>
-          <div className="ep-field">
-            <label>Grade</label>
-            <select className="acc-select" style={{ width: '100%', maxWidth: 'none' }} value={linkForm.grade} onChange={(e) => setLinkForm((p) => ({ ...p, grade: e.target.value }))}>
-              {gradeOpts.map(([k, gg]) => <option key={k} value={k}>{gg.label}</option>)}
-            </select>
-          </div>
-          <button className="btn-neon-gold acc-authorize" onClick={doLink} disabled={busy}><Icons.check size={16} /> Rattacher</button>
         </div>
-      </div>
+      )}
 
       <Card style={{ overflowX: 'auto', marginBottom: 28 }}>
         <table className="tbl acc-tbl" style={{ minWidth: 860 }}>
@@ -139,20 +134,22 @@ export default function AccessView({ requests, members }: { requests: Access[]; 
                   </td>
                   <td style={{ color: 'var(--ink-400)', fontSize: 12, fontFamily: 'monospace' }}>{m.discord_id || '—'}</td>
                   <td>
-                    <select className="acc-select grade" value={m.grade} onChange={(e) => changeGrade(m, e.target.value)} style={{ color: gc.color, borderColor: gc.color }}>
+                    <select className="acc-select grade" value={m.grade} onChange={(e) => changeGrade(m, e.target.value)} disabled={!editable} style={{ color: gc.color, borderColor: gc.color }}>
                       {gradeOpts.map(([k, gg]) => <option key={k} value={k}>{gg.label}</option>)}
                     </select>
                   </td>
                   <td><span className="badge ok">Actif</span></td>
                   <td style={{ color: 'var(--ink-400)', fontSize: 12.5 }}>{m.since || '—'}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: 6 }}>
-                      {!current ? (
-                        <div className="icon-btn" style={{ width: 32, height: 32 }} title="Retirer l'accès" onClick={() => remove(m)}><Icons.trash size={14} /></div>
-                      ) : (
-                        <div className="icon-btn" style={{ width: 32, height: 32, opacity: 0.4, pointerEvents: 'none' }}><Icons.shield size={14} /></div>
-                      )}
-                    </div>
+                    {editable && (
+                      <div style={{ display: 'inline-flex', gap: 6 }}>
+                        {!current ? (
+                          <div className="icon-btn" style={{ width: 32, height: 32 }} title="Retirer l'accès" onClick={() => remove(m)}><Icons.trash size={14} /></div>
+                        ) : (
+                          <div className="icon-btn" style={{ width: 32, height: 32, opacity: 0.4, pointerEvents: 'none' }}><Icons.shield size={14} /></div>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )

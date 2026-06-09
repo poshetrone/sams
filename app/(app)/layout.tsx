@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getPermMap } from '@/lib/auth'
 import AppShell from '@/components/AppShell'
 import type { CurrentMember } from '@/lib/app-context'
 
@@ -29,6 +30,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
 
+  const perms = await getPermMap()
+
   const current: CurrentMember = {
     id: member.id,
     name: member.name,
@@ -38,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AppShell member={current} reqCount={count ?? 0}>
+    <AppShell member={current} reqCount={count ?? 0} perms={perms}>
       {children}
     </AppShell>
   )

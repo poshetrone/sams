@@ -31,8 +31,9 @@ function WarnCrosses({ n }: { n: number }) {
 
 export default function EffectifsView({ members }: { members: Member[] }) {
   const router = useRouter()
-  const { can, search } = useApp()
-  const isAdmin = can('manageStaff')
+  const { can, search, canEdit } = useApp()
+  const editable = canEdit('effectifs')
+  const isAdmin = can('manageStaff') && editable
   const [modal, setModal] = useState<'new' | { employee: Member } | null>(null)
   const [contract, setContract] = useState(false)
   const [confirmDel, setConfirmDel] = useState<Member | null>(null)
@@ -135,7 +136,7 @@ export default function EffectifsView({ members }: { members: Member[] }) {
                   </td>
                   <td style={{ color: m.phone ? 'var(--ink-200)' : 'var(--ink-500)', fontSize: 13, whiteSpace: 'nowrap' }}>{m.phone ? fmtPhone(m.phone) : '—'}</td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <ContractCell member={m} isAdmin={isAdmin} onChanged={() => router.refresh()} />
+                    <ContractCell member={m} isAdmin={isAdmin} editable={editable} onChanged={() => router.refresh()} />
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -175,12 +176,13 @@ export default function EffectifsView({ members }: { members: Member[] }) {
       {modal && (
         <EmployeeModal
           employee={modal === 'new' ? null : modal.employee}
+          editable={editable}
           onClose={() => setModal(null)}
           onSaved={() => router.refresh()}
         />
       )}
 
-      {contract && <ContractEditor employees={members} onClose={() => setContract(false)} onSavedPhoto={() => router.refresh()} />}
+      {contract && <ContractEditor employees={members} editable={editable} onClose={() => setContract(false)} onSavedPhoto={() => router.refresh()} />}
 
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(null)} title="Supprimer l'employé" icon={<Icons.trash size={20} />}>

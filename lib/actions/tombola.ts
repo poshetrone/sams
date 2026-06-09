@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 
 type Result = { ok: boolean; error?: string }
 
@@ -17,8 +17,7 @@ async function readTombola() {
  * numéro dépasse la nouvelle taille sont retirés.
  */
 export async function setTombolaSize(size: number): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('tombola') } catch (e) { return { ok: false, error: (e as Error).message } }
   const { admin, row } = await readTombola()
   const prev: Record<string, string> = row?.tickets || {}
   const tickets: Record<string, string> = {}
@@ -34,8 +33,7 @@ export async function setTombolaSize(size: number): Promise<Result> {
 
 /** Attribue un ticket à un nom. */
 export async function assignTicket(num: number, name: string): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('tombola') } catch (e) { return { ok: false, error: (e as Error).message } }
   if (!name.trim()) return { ok: false, error: 'Nom requis' }
   const { admin, row } = await readTombola()
   const tickets = { ...(row?.tickets || {}), [num]: name.trim() }
@@ -47,8 +45,7 @@ export async function assignTicket(num: number, name: string): Promise<Result> {
 
 /** Libère un ticket. */
 export async function freeTicket(num: number): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('tombola') } catch (e) { return { ok: false, error: (e as Error).message } }
   const { admin, row } = await readTombola()
   const tickets = { ...(row?.tickets || {}) }
   delete tickets[num]
@@ -61,8 +58,7 @@ export async function freeTicket(num: number): Promise<Result> {
 
 /** Enregistre le gagnant du tirage. */
 export async function setWinner(num: number, who: string): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('tombola') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { error } = await admin.from('tombola').update({ winner: { num, who } }).eq('id', 1)
   if (error) return { ok: false, error: error.message }
@@ -72,8 +68,7 @@ export async function setWinner(num: number, who: string): Promise<Result> {
 
 /** Vide la grille (tickets + gagnant). */
 export async function clearTombola(): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('tombola') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { error } = await admin.from('tombola').update({ tickets: {}, winner: null }).eq('id', 1)
   if (error) return { ok: false, error: error.message }

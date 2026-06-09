@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Modal from '@/components/Modal'
 import { Icons } from '@/components/Icons'
 import { fmtPhone, initialsOf } from '@/lib/format'
+import { useApp } from '@/lib/app-context'
 import { createPatient, updatePatient } from '@/lib/actions/patients'
 import { handleImageUpload } from '@/lib/image'
 import type { Patient, Emergency, Vitals } from '@/lib/types'
@@ -41,6 +42,8 @@ export default function PatientModal({
   onClose: () => void
   onSaved: (id?: string) => void
 }) {
+  const { canEdit } = useApp()
+  const editable = canEdit('patients')
   const isNew = !patient
   const [f, setF] = useState<PForm>(
     patient
@@ -212,10 +215,12 @@ export default function PatientModal({
 
         {error && <div style={{ color: 'var(--crit)', fontSize: 13, marginTop: 12 }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-          <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>Annuler</button>
-          <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}>
-            <Icons.check size={15} /> {busy ? 'Enregistrement…' : isNew ? 'Créer le dossier' : 'Enregistrer'}
-          </button>
+          <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>{editable ? 'Annuler' : 'Fermer'}</button>
+          {editable && (
+            <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}>
+              <Icons.check size={15} /> {busy ? 'Enregistrement…' : isNew ? 'Créer le dossier' : 'Enregistrer'}
+            </button>
+          )}
         </div>
       </div>
     </Modal>

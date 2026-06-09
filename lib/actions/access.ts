@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requirePerm } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 
 type Result = { ok: boolean; error?: string }
@@ -10,7 +10,7 @@ type Result = { ok: boolean; error?: string }
 export async function approveAccess(accessId: string): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageAccess')
+    me = await requireEdit('access')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -49,7 +49,7 @@ export async function approveAccess(accessId: string): Promise<Result> {
 export async function linkAccess(memberId: string, discordId: string, grade: string): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageAccess')
+    me = await requireEdit('access')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -87,7 +87,7 @@ export async function linkAccess(memberId: string, discordId: string, grade: str
 export async function refuseAccess(accessId: string, label: string): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageAccess')
+    me = await requireEdit('access')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

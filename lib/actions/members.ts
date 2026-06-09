@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requirePerm } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 
 export interface MemberInput {
@@ -40,7 +40,7 @@ function clean(input: MemberInput) {
 export async function createMember(input: MemberInput): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageStaff')
+    me = await requireEdit('effectifs')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -58,7 +58,7 @@ export async function createMember(input: MemberInput): Promise<Result> {
 export async function updateMember(input: MemberInput): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageStaff')
+    me = await requireEdit('effectifs')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -77,7 +77,7 @@ export async function updateMember(input: MemberInput): Promise<Result> {
 export async function deleteMember(id: string, name: string): Promise<Result> {
   let me
   try {
-    me = await requirePerm('manageStaff')
+    me = await requireEdit('effectifs')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -94,7 +94,7 @@ export async function deleteMember(id: string, name: string): Promise<Result> {
 /* ---------- Primes ---------- */
 export async function setPrime(id: string, prime: boolean): Promise<Result> {
   try {
-    await requirePerm('manageStaff')
+    await requireEdit('primes')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -107,7 +107,7 @@ export async function setPrime(id: string, prime: boolean): Promise<Result> {
 
 export async function setBonus(id: string, bonus: number): Promise<Result> {
   try {
-    await requirePerm('manageStaff')
+    await requireEdit('primes')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -121,7 +121,7 @@ export async function setBonus(id: string, bonus: number): Promise<Result> {
 export async function resetPrimes(): Promise<Result> {
   let me
   try {
-    me = await requirePerm('resetPrime')
+    me = await requireEdit('primes')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -136,7 +136,7 @@ export async function resetPrimes(): Promise<Result> {
 /* ---------- Contrat : photo signée rattachée à l'employé ---------- */
 export async function addContractPhoto(memberId: string, src: string): Promise<Result> {
   try {
-    await requirePerm('manageStaff')
+    await requireEdit('effectifs')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -159,7 +159,7 @@ export async function addContractPhoto(memberId: string, src: string): Promise<R
 /** Supprime une photo de contrat d'un employé (Direction). */
 export async function deleteContractPhoto(memberId: string, photoId: string): Promise<Result> {
   try {
-    await requirePerm('manageStaff')
+    await requireEdit('effectifs')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -176,7 +176,7 @@ export async function deleteContractPhoto(memberId: string, photoId: string): Pr
 /* ---------- Formations (validation par membre) ---------- */
 export async function updateMemberFormations(id: string, formations: string[]): Promise<Result> {
   try {
-    await requirePerm('manageStaff')
+    await requireEdit('formations')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

@@ -13,7 +13,8 @@ import type { Member, FormationRow } from '@/lib/types'
 
 export default function FormationsView({ members: initialMembers, formations }: { members: Member[]; formations: FormationRow[] }) {
   const router = useRouter()
-  const { search, isAdmin } = useApp()
+  const { search, isAdmin: isAdminGrade, canEdit } = useApp()
+  const isAdmin = isAdminGrade && canEdit('formations')
   const [members, setMembers] = useState(initialMembers)
   useEffect(() => setMembers(initialMembers), [initialMembers])
   const [modal, setModal] = useState<FormationRow | 'new' | null>(null)

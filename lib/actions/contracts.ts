@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 
 export interface ContractInput {
   id?: string
@@ -20,7 +20,7 @@ type Result = { ok: boolean; error?: string }
 
 export async function saveContract(input: ContractInput): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('contrats')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -51,7 +51,7 @@ export async function saveContract(input: ContractInput): Promise<Result> {
 
 export async function deleteContract(id: string): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('contrats')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

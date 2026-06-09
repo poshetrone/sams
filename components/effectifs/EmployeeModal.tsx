@@ -16,10 +16,12 @@ const STATUS_OPTS: [string, string][] = [
 
 export default function EmployeeModal({
   employee,
+  editable = true,
   onClose,
   onSaved,
 }: {
   employee: Member | null
+  editable?: boolean
   onClose: () => void
   onSaved: () => void
 }) {
@@ -157,11 +159,13 @@ export default function EmployeeModal({
         {error && <div style={{ color: 'var(--crit)', fontSize: 13, marginTop: 12 }}>{error}</div>}
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
           <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>
-            Annuler
+            {editable ? 'Annuler' : 'Fermer'}
           </button>
-          <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}>
-            <Icons.check size={15} /> {busy ? 'Enregistrement…' : isNew ? 'Ajouter' : 'Enregistrer'}
-          </button>
+          {editable && (
+            <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}>
+              <Icons.check size={15} /> {busy ? 'Enregistrement…' : isNew ? 'Ajouter' : 'Enregistrer'}
+            </button>
+          )}
         </div>
       </div>
     </Modal>

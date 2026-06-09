@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember, isAdminGrade } from '@/lib/auth'
+import { getServerAccess } from '@/lib/auth'
 import { Card, GradePill, SecTitle } from '@/components/ui'
 import Restricted from '@/components/Restricted'
 import type { AuditEntry } from '@/lib/types'
@@ -7,8 +7,8 @@ import type { AuditEntry } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 
 export default async function AuditPage() {
-  const me = await getCurrentMember()
-  if (!isAdminGrade(me?.grade)) return <Restricted>Le journal d&apos;audit est réservé à la Direction.</Restricted>
+  if ((await getServerAccess('audit')) === 'none')
+    return <Restricted>Le journal d&apos;audit est réservé à la Direction.</Restricted>
 
   const admin = createServiceClient()
   const { data } = await admin.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200)

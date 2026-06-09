@@ -16,7 +16,8 @@ import type { Member } from '@/lib/types'
  * - « — » si aucune photo.
  * Photos stockées dans Storage (bucket media) ; URL persistée en base.
  */
-export default function ContractCell({ member, isAdmin, onChanged }: { member: Member; isAdmin: boolean; onChanged: () => void }) {
+export default function ContractCell({ member, isAdmin, editable = true, onChanged }: { member: Member; isAdmin: boolean; editable?: boolean; onChanged: () => void }) {
+  const canWrite = isAdmin && editable
   const photos = member.contract_photos || []
   const last = photos[photos.length - 1]
   const fileRef = useRef<HTMLInputElement>(null)
@@ -50,15 +51,15 @@ export default function ContractCell({ member, isAdmin, onChanged }: { member: M
             <b>SIGNÉ{photos.length > 1 ? ` · ${photos.length}` : ''}</b>
             <span>Cliquer pour voir</span>
           </div>
-          {isAdmin && (
+          {canWrite && (
             <div className="ct-signed-actions">
               <div className="ct-act" title="Ajouter une photo" onClick={(e) => { e.stopPropagation(); if (!busy) fileRef.current?.click() }}><Icons.plus size={13} /></div>
               <div className="ct-act del" title="Supprimer" onClick={(e) => { e.stopPropagation(); if (!busy) del(last.id) }}><Icons.trash size={13} /></div>
             </div>
           )}
-          {isAdmin && <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upload(e.target.files?.[0])} />}
+          {canWrite && <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => upload(e.target.files?.[0])} />}
         </div>
-      ) : isAdmin ? (
+      ) : canWrite ? (
         <div className="ct-add-tile" onClick={() => { if (!busy) fileRef.current?.click() }} title="Ajouter une photo du contrat">
           <Icons.camera size={15} />
           <span>{busy ? 'Envoi…' : 'Photo du contrat'}</span>

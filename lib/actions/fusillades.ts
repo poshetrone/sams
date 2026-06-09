@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember, requireAdmin } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 import type { Wounded, Fusillade } from '@/lib/types'
 
@@ -27,8 +27,8 @@ export interface FusilladeInput {
 }
 
 export async function createFusillade(input: FusilladeInput): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEdit('fusillade') } catch (e) { return { ok: false, error: (e as Error).message } }
   if (!input.title.trim() || input.x == null) return { ok: false, error: 'Titre et position requis' }
   const admin = createServiceClient()
   const { data, error } = await admin.from('fusillades').insert({
@@ -43,8 +43,7 @@ export async function createFusillade(input: FusilladeInput): Promise<Result> {
 
 /** Met à jour le statut et/ou les blessés d'une fusillade. */
 export async function updateFusillade(id: string, patch: Partial<Pick<Fusillade, 'status' | 'wounded'>>): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('fusillade') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { error } = await admin.from('fusillades').update(patch).eq('id', id)
   if (error) return { ok: false, error: error.message }
@@ -56,7 +55,7 @@ export async function updateFusillade(id: string, patch: Partial<Pick<Fusillade,
 export async function deleteFusillade(id: string): Promise<Result> {
   let me
   try {
-    me = await requireAdmin()
+    me = await requireEdit('fusillade')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -71,8 +70,8 @@ export async function deleteFusillade(id: string): Promise<Result> {
 
 /** Crée un dossier patient depuis un blessé et le lie à la fusillade. */
 export async function createPatientFromWounded(fusId: string, w: Wounded): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEdit('fusillade') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
 
   const [first, ...rest] = (w.name || 'Inconnu').split(' ')

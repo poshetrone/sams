@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 
 export interface FormationInput {
   key?: string
@@ -17,7 +17,7 @@ const slugify = (s: string) =>
 
 export async function saveFormation(input: FormationInput, existingKeys: string[]): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('formations')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -47,7 +47,7 @@ export async function saveFormation(input: FormationInput, existingKeys: string[
 
 export async function deleteFormation(key: string): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('formations')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

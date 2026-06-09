@@ -4,6 +4,7 @@ import { Icons } from '@/components/Icons'
 import Modal from '@/components/Modal'
 import { setTombolaSize, assignTicket, freeTicket, setWinner, clearTombola } from '@/lib/actions/tombola'
 import { useRealtime } from '@/lib/useRealtime'
+import { useApp } from '@/lib/app-context'
 import type { Tombola } from '@/lib/types'
 
 const TICKET_SIZES = [50, 70, 100, 200, 500]
@@ -12,6 +13,8 @@ type Confirm = { type: 'clear' | 'redraw' | 'size'; n?: number; lost?: number } 
 
 export default function TombolaView({ tombola }: { tombola: Tombola }) {
   useRealtime('tombola')
+  const { canEdit } = useApp()
+  const editable = canEdit('tombola')
   const [size, setSizeLocal] = useState(tombola.size)
   const [tickets, setTickets] = useState<Record<string, string>>(tombola.tickets || {})
   const [winner, setWinnerLocal] = useState<Win>(tombola.winner)
@@ -87,19 +90,23 @@ export default function TombolaView({ tombola }: { tombola: Tombola }) {
           <div style={{ fontSize: 13.5, color: 'var(--ink-400)' }}>
             Grille de <b style={{ color: 'var(--gold-300)' }}>{size}</b> tickets · <b style={{ color: 'var(--ink-100)' }}>{taken}</b> attribué{taken > 1 ? 's' : ''} · partagé avec tout le service
           </div>
-          <div className="tom-sizes">
-            {TICKET_SIZES.map((n) => (
-              <div key={n} className={`tom-size ${size === n ? 'on' : ''}`} onClick={() => requestSize(n)}>{n}</div>
-            ))}
-          </div>
+          {editable && (
+            <div className="tom-sizes">
+              {TICKET_SIZES.map((n) => (
+                <div key={n} className={`tom-size ${size === n ? 'on' : ''}`} onClick={() => requestSize(n)}>{n}</div>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="tom-actions">
-          <div className="tom-name">
-            <Icons.user size={15} />
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom à attribuer…" />
+        {editable && (
+          <div className="tom-actions">
+            <div className="tom-name">
+              <Icons.user size={15} />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom à attribuer…" />
+            </div>
+            <button className="btn-neon-gold" onClick={draw} disabled={drawing}><Icons.medal size={16} /> Tirage au sort</button>
           </div>
-          <button className="btn-neon-gold" onClick={draw} disabled={drawing}><Icons.medal size={16} /> Tirage au sort</button>
-        </div>
+        )}
       </div>
 
       {(winner || rolling) && (
@@ -108,7 +115,7 @@ export default function TombolaView({ tombola }: { tombola: Tombola }) {
           <div className="tw-label">{rolling ? 'Tirage en cours…' : '🎉 Gagnant'}</div>
           <div className="tw-num">#{(rolling || winner)!.num}</div>
           <div className="tw-who">{(rolling || winner)!.who}</div>
-          {winner && (
+          {winner && editable && (
             <div className="tom-winactions">
               <button className="btn-neon-blue" onClick={() => setConfirm({ type: 'redraw' })}><Icons.reset size={14} /> Retirer au sort</button>
               <button className="btn-neon-gold" onClick={() => setConfirm({ type: 'clear' })}><Icons.trash size={14} /> Vider la grille</button>
@@ -126,8 +133,9 @@ export default function TombolaView({ tombola }: { tombola: Tombola }) {
               <div
                 key={num}
                 className={`tom-ticket ${who ? 'taken' : ''} ${isWin ? 'win' : ''}`}
-                onClick={() => { if (who) free(num); else assign(num) }}
-                title={who ? `${who} — cliquer pour libérer` : 'Cliquer pour attribuer'}
+                onClick={editable ? () => { if (who) free(num); else assign(num) } : undefined}
+                style={editable ? undefined : { cursor: 'default' }}
+                title={editable ? (who ? `${who} — cliquer pour libérer` : 'Cliquer pour attribuer') : who || undefined}
               >
                 <span className="tt-num">{num}</span>
                 {who && <span className="tt-who">{who}</span>}

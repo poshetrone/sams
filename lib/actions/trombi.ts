@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember, requireAdmin } from '@/lib/auth'
+import { getCurrentMember, requireEdit } from '@/lib/auth'
 
 type Result = { ok: boolean; error?: string }
 
@@ -13,8 +13,8 @@ const stamp = () => {
 
 /** Publie un message sur le mur du trombinoscope. */
 export async function addPost(text: string, photo: string | null): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEdit('trombi') } catch (e) { return { ok: false, error: (e as Error).message } }
   if (!text.trim() && !photo) return { ok: false, error: 'Message vide' }
   const admin = createServiceClient()
   const { error } = await admin.from('trombi_posts').insert({
@@ -28,7 +28,7 @@ export async function addPost(text: string, photo: string | null): Promise<Resul
 /** Supprime un message (Direction). */
 export async function deletePost(id: string): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('trombi')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

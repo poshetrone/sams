@@ -33,7 +33,9 @@ const diffMin = (start: string, end: string) => {
 
 export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] }) {
   const router = useRouter()
-  const { member, isAdmin } = useApp()
+  const { member, isAdmin: isAdminGrade, canEdit } = useApp()
+  const editable = canEdit('pointeuse')
+  const isAdmin = isAdminGrade && editable
   const [, setTick] = useState(0)
   const [editRow, setEditRow] = useState<Timeclock | null>(null)
   const [busy, setBusy] = useState(false)
@@ -66,11 +68,11 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
               </div>
             </div>
           </div>
-          {myOpen ? (
+          {editable && (myOpen ? (
             <button className="btn-refuse pt-btn" onClick={end} disabled={busy}><Icons.pause size={16} /> Arrêter le service</button>
           ) : (
             <button className="btn-neon-gold pt-btn" onClick={start} disabled={busy}><Icons.pulse size={16} /> Prendre le service</button>
-          )}
+          ))}
         </div>
         <Card className="kpi"><div className="kpi-ico"><Icons.pulse size={20} /></div><div className="label">En service maintenant</div><div className="val">{onDuty.length}</div></Card>
         <Card className="kpi"><div className="kpi-ico"><Icons.clock size={20} /></div><div className="label">Heures cumulées aujourd&apos;hui</div><div className="val" style={{ fontSize: 32 }}>{fmtDur(totalToday)}</div></Card>

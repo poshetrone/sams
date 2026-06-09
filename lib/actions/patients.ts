@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember, requirePerm } from '@/lib/auth'
+import { requireEdit, requireEditAny } from '@/lib/auth'
 import { logAudit } from '@/lib/actions/audit'
 import type { PatientPatch, PatientDoc, PatientImage } from '@/lib/types'
 
@@ -9,8 +9,8 @@ type Result = { ok: boolean; error?: string; id?: string }
 
 /** Ajoute (prepend) un document au dossier patient. */
 export async function attachPatientDoc(patientId: string, entry: PatientDoc): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEditAny(['patients', 'documents']) } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { data: p } = await admin.from('patients').select('docs').eq('id', patientId).maybeSingle()
   if (!p) return { ok: false, error: 'Patient introuvable — rechargez la page (F5) et resélectionnez le patient.' }
@@ -24,8 +24,8 @@ export async function attachPatientDoc(patientId: string, entry: PatientDoc): Pr
 
 /** Met à jour un document existant du dossier (par id) — pas de doublon. */
 export async function updatePatientDoc(patientId: string, docId: string, patch: Partial<PatientDoc>): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEditAny(['patients', 'documents']) } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { data: p } = await admin.from('patients').select('docs').eq('id', patientId).maybeSingle()
   if (!p) return { ok: false, error: 'Patient introuvable' }
@@ -53,8 +53,8 @@ export async function importPatientDoc(
   mime: string,
   dataUrl: string
 ): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEditAny(['patients', 'documents']) } catch (e) { return { ok: false, error: (e as Error).message } }
 
   const match = dataUrl.match(/^data:(.+?);base64,(.*)$/)
   if (!match) return { ok: false, error: 'Fichier invalide' }
@@ -92,8 +92,8 @@ export async function importPatientDoc(
 
 /** Ajoute (prepend) un cliché à l'imagerie du patient. */
 export async function attachPatientImage(patientId: string, image: PatientImage): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEditAny(['patients', 'documents']) } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { data: p } = await admin.from('patients').select('images').eq('id', patientId).maybeSingle()
   if (!p) return { ok: false, error: 'Patient introuvable' }
@@ -107,8 +107,8 @@ export async function attachPatientImage(patientId: string, image: PatientImage)
 
 /** Crée un dossier patient. Tout membre authentifié peut créer. */
 export async function createPatient(input: PatientPatch & { first_name: string; last_name: string }): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEdit('patients') } catch (e) { return { ok: false, error: (e as Error).message } }
   if (!input.first_name?.trim() || !input.last_name?.trim()) return { ok: false, error: 'Prénom et nom requis' }
 
   const admin = createServiceClient()
@@ -122,8 +122,7 @@ export async function createPatient(input: PatientPatch & { first_name: string; 
 
 /** Met à jour des champs d'un dossier patient. */
 export async function updatePatient(id: string, patch: PatientPatch): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('patients') } catch (e) { return { ok: false, error: (e as Error).message } }
 
   const admin = createServiceClient()
   const { error } = await admin.from('patients').update(patch).eq('id', id)
@@ -137,7 +136,7 @@ export async function updatePatient(id: string, patch: PatientPatch): Promise<Re
 /** Supprime un dossier patient (Direction / Responsable). */
 export async function deletePatient(id: string, label: string): Promise<Result> {
   try {
-    const me = await requirePerm('deletePatient')
+    const me = await requireEdit('patients')
     const admin = createServiceClient()
     const { error } = await admin.from('patients').delete().eq('id', id)
     if (error) return { ok: false, error: error.message }
@@ -152,7 +151,7 @@ export async function deletePatient(id: string, label: string): Promise<Result> 
 /** Déclare un patient décédé (Médecin Senior et +). */
 export async function declareDeath(id: string, label: string): Promise<Result> {
   try {
-    const me = await requirePerm('declareDeath')
+    const me = await requireEdit('patients')
     const admin = createServiceClient()
     const { error } = await admin.from('patients').update({ status: 'deces', care: 'sorti' }).eq('id', id)
     if (error) return { ok: false, error: error.message }

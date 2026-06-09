@@ -12,7 +12,8 @@ import type { TrombiPost } from '@/lib/types'
 
 export default function TrombiView({ posts }: { posts: TrombiPost[] }) {
   const router = useRouter()
-  const { member, isAdmin } = useApp()
+  const { member, isAdmin, canEdit } = useApp()
+  const editable = canEdit('trombi')
   useRealtime('trombi_posts')
   const [text, setText] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
@@ -60,7 +61,7 @@ export default function TrombiView({ posts }: { posts: TrombiPost[] }) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img className="tb-shot" src={p.photo} alt="" />
                   )}
-                  {isAdmin && <div className="tb-del" title="Supprimer (Direction)" onClick={() => del(p.id)}><Icons.trash size={13} /></div>}
+                  {isAdmin && editable && <div className="tb-del" title="Supprimer (Direction)" onClick={() => del(p.id)}><Icons.trash size={13} /></div>}
                 </div>
                 <div className={`tb-like ${liked ? 'on' : ''}`} onClick={() => like(p.id)} title={likers.length ? likers.join(', ') : 'Aimer'}>
                   <Icons.heart size={14} />{likers.length > 0 && <span>{likers.length}</span>}
@@ -72,21 +73,23 @@ export default function TrombiView({ posts }: { posts: TrombiPost[] }) {
         {posts.length === 0 && <div style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>Aucun message. Soyez le premier à poster !</div>}
       </div>
 
-      <div className="tb-composer">
-        {photo && (
-          <div className="tb-preview">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo} alt="" />
-            <div className="tb-preview-x" onClick={() => setPhoto(null)}><Icons.x size={13} /></div>
+      {editable && (
+        <div className="tb-composer">
+          {photo && (
+            <div className="tb-preview">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo} alt="" />
+              <div className="tb-preview-x" onClick={() => setPhoto(null)}><Icons.x size={13} /></div>
+            </div>
+          )}
+          <div className="tb-inputrow">
+            <div className="tb-iconbtn" title="Ajouter une photo" onClick={() => fileRef.current?.click()}><Icons.camera size={18} /></div>
+            <input className="tb-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder="Écrivez un message…" />
+            <button className="btn-neon-gold" onClick={send}><Icons.chevR size={16} /> Envoyer</button>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onPhoto(e.target.files?.[0])} />
           </div>
-        )}
-        <div className="tb-inputrow">
-          <div className="tb-iconbtn" title="Ajouter une photo" onClick={() => fileRef.current?.click()}><Icons.camera size={18} /></div>
-          <input className="tb-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder="Écrivez un message…" />
-          <button className="btn-neon-gold" onClick={send}><Icons.chevR size={16} /> Envoyer</button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onPhoto(e.target.files?.[0])} />
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -36,7 +36,7 @@ function CtRow({ label, initial, ph }: { label: string; initial?: string; ph?: s
  * (reference_design/views_contract.jsx → ContractEditor). Même structure HTML,
  * mêmes classes CSS. Ajout d'un sélecteur d'employé pour le pré-remplissage.
  */
-export default function ContractEditor({ employees, onClose, onSavedPhoto }: { employees: Member[]; onClose: () => void; onSavedPhoto?: () => void }) {
+export default function ContractEditor({ employees, editable = true, onClose, onSavedPhoto }: { employees: Member[]; editable?: boolean; onClose: () => void; onSavedPhoto?: () => void }) {
   const [selectedId, setSelectedId] = useState('')
   const [toast, setToast] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -73,10 +73,12 @@ export default function ContractEditor({ employees, onClose, onSavedPhoto }: { e
         </select>
         <div className="ct-tools">
           <button className="btn btn-ghost" onClick={clearAll}><Icons.reset size={14} /> Vider</button>
-          <button className="btn btn-ghost" onClick={() => fileRef.current?.click()} title="Uploader la photo du contrat signé (rattachée à l'employé sélectionné)"><Icons.camera size={14} /> Photo du contrat</button>
+          {editable && (
+            <button className="btn btn-ghost" onClick={() => fileRef.current?.click()} title="Uploader la photo du contrat signé (rattachée à l'employé sélectionné)"><Icons.camera size={14} /> Photo du contrat</button>
+          )}
           <button className="btn btn-gold" onClick={download}><Icons.download size={14} /> Télécharger PNG</button>
           <button className="btn btn-ghost" onClick={onClose}><Icons.x size={15} /> Fermer</button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onPhoto(e.target.files?.[0])} />
+          {editable && <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onPhoto(e.target.files?.[0])} />}
         </div>
       </div>
 

@@ -28,7 +28,8 @@ export default function DocumentsView({
   death?: boolean
 }) {
   const router = useRouter()
-  const { member, can } = useApp()
+  const { member, can, canEdit } = useApp()
+  const editable = canEdit('documents')
   const [type, setType] = useState<string | null>(initialType || null)
   const [patient, setPatient] = useState<Patient | null>(patients.find((p) => p.id === initialPatientId) || null)
   const [deathDone, setDeathDone] = useState(false)
@@ -72,7 +73,7 @@ export default function DocumentsView({
             </select>
           </div>
           <div className="spacer"></div>
-          {patient && (
+          {editable && patient && (
             <button className="btn btn-ghost" style={{ color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' }} onClick={attach}>
               <Icons.patient size={15} /> {type === 'imagerie' ? "Ajouter à l'imagerie" : 'Rattacher au dossier'}
             </button>
@@ -85,7 +86,7 @@ export default function DocumentsView({
             <Icons.cross size={18} style={{ color: 'var(--crit)', flex: '0 0 auto' }} />
             <div style={{ flex: 1, fontSize: 13.5, color: 'var(--ink-200)' }}>Acte de décès généré pour <b style={{ color: 'var(--ink-100)' }}>{patient.first_name} {patient.last_name}</b>. Voulez-vous supprimer définitivement son dossier ?</div>
             <button className="btn btn-ghost" onClick={() => setDeathDone(true)}>Conserver le dossier</button>
-            {can('deletePatient') && (
+            {editable && can('deletePatient') && (
               <button className="btn-refuse" onClick={async () => { await deletePatient(patient.id, `${patient.first_name} ${patient.last_name}`); setDeathDone(true); flash('Dossier supprimé'); router.push('/patients') }}>
                 <Icons.trash size={14} /> Supprimer le dossier
               </button>

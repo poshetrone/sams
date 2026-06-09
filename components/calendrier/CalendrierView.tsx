@@ -6,6 +6,7 @@ import { Card } from '@/components/ui'
 import Modal from '@/components/Modal'
 import { MONTHS_FR, WEEKDAYS_FR } from '@/lib/constants'
 import { addCalendarEvent, deleteCalendarEvent } from '@/lib/actions/calendar'
+import { useApp } from '@/lib/app-context'
 import { useRealtime } from '@/lib/useRealtime'
 import type { CalendarEvent } from '@/lib/types'
 
@@ -19,6 +20,8 @@ const todayKey = () => {
 
 export default function CalendrierView({ events }: { events: CalendarEvent[] }) {
   const router = useRouter()
+  const { canEdit } = useApp()
+  const editable = canEdit('calendrier')
   useRealtime('calendar_events')
   const [month, setMonth] = useState(5)
   const [open, setOpen] = useState<number | null>(null)
@@ -74,7 +77,7 @@ export default function CalendrierView({ events }: { events: CalendarEvent[] }) 
                   {evts.slice(0, 3).map((ev) => <div key={ev.id} className={`cal-evt ${ev.color}`}>{ev.text}</div>)}
                   {evts.length > 3 && <div className="cal-more">+{evts.length - 3}</div>}
                 </div>
-                <div className="cal-add"><Icons.plus size={13} /></div>
+                {editable && <div className="cal-add"><Icons.plus size={13} /></div>}
               </div>
             )
           })}
@@ -87,6 +90,7 @@ export default function CalendrierView({ events }: { events: CalendarEvent[] }) 
           month={month}
           day={open}
           events={byDay.get(keyOf(month, open)) || []}
+          editable={editable}
           onClose={() => setOpen(null)}
           onChanged={() => router.refresh()}
         />
@@ -95,7 +99,7 @@ export default function CalendrierView({ events }: { events: CalendarEvent[] }) 
   )
 }
 
-function DayModal({ mKey, month, day, events, onClose, onChanged }: { mKey: string; month: number; day: number; events: CalendarEvent[]; onClose: () => void; onChanged: () => void }) {
+function DayModal({ mKey, month, day, events, editable, onClose, onChanged }: { mKey: string; month: number; day: number; events: CalendarEvent[]; editable: boolean; onClose: () => void; onChanged: () => void }) {
   const [text, setText] = useState('')
   const [color, setColor] = useState<'gold' | 'blue'>('gold')
   const [busy, setBusy] = useState(false)
@@ -124,22 +128,24 @@ function DayModal({ mKey, month, day, events, onClose, onChanged }: { mKey: stri
               <div style={{ fontSize: 13.5, color: 'var(--ink-100)' }}>{ev.text}</div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-500)', marginTop: 2 }}>par {ev.author}</div>
             </div>
-            <div className="icon-btn" style={{ width: 30, height: 30 }} title="Supprimer" onClick={() => del(ev.id)}><Icons.trash size={14} /></div>
+            {editable && <div className="icon-btn" style={{ width: 30, height: 30 }} title="Supprimer" onClick={() => del(ev.id)}><Icons.trash size={14} /></div>}
           </div>
         ))}
       </div>
-      <div className="editor-panel">
-        <div className="ep-field"><label>Nouvelle note (visible par tout le service)</label>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex : Réunion, garde, formation…" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') add() }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="chips">
-            <div className={`chip ${color === 'gold' ? 'on' : ''}`} onClick={() => setColor('gold')} style={color === 'gold' ? { color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' } : undefined}>Doré</div>
-            <div className={`chip ${color === 'blue' ? 'on' : ''}`} onClick={() => setColor('blue')} style={color === 'blue' ? { color: '#7fb8e0', borderColor: 'rgba(90,160,214,0.5)' } : undefined}>Bleu</div>
+      {editable && (
+        <div className="editor-panel">
+          <div className="ep-field"><label>Nouvelle note (visible par tout le service)</label>
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex : Réunion, garde, formation…" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') add() }} />
           </div>
-          <button className="btn btn-gold" style={{ marginLeft: 'auto' }} onClick={add} disabled={busy}><Icons.plus size={15} /> Ajouter</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="chips">
+              <div className={`chip ${color === 'gold' ? 'on' : ''}`} onClick={() => setColor('gold')} style={color === 'gold' ? { color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' } : undefined}>Doré</div>
+              <div className={`chip ${color === 'blue' ? 'on' : ''}`} onClick={() => setColor('blue')} style={color === 'blue' ? { color: '#7fb8e0', borderColor: 'rgba(90,160,214,0.5)' } : undefined}>Bleu</div>
+            </div>
+            <button className="btn btn-gold" style={{ marginLeft: 'auto' }} onClick={add} disabled={busy}><Icons.plus size={15} /> Ajouter</button>
+          </div>
         </div>
-      </div>
+      )}
     </Modal>
   )
 }

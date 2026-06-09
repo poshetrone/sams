@@ -1,7 +1,7 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getCurrentMember, requireAdmin } from '@/lib/auth'
+import { requireEdit } from '@/lib/auth'
 
 type Result = { ok: boolean; error?: string }
 
@@ -24,8 +24,8 @@ function diffMin(start: string, end: string): number {
 
 /** Prise de service du membre connecté. */
 export async function startShift(): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  let me
+  try { me = await requireEdit('pointeuse') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   // Empêche un double pointage ouvert
   const { data: open } = await admin.from('timeclock').select('id').eq('member_id', me.id).is('end', null).maybeSingle()
@@ -40,8 +40,7 @@ export async function startShift(): Promise<Result> {
 
 /** Fin de service (ferme le pointage ouvert du membre). */
 export async function endShift(id: string): Promise<Result> {
-  const me = await getCurrentMember()
-  if (!me) return { ok: false, error: 'Non authentifié' }
+  try { await requireEdit('pointeuse') } catch (e) { return { ok: false, error: (e as Error).message } }
   const admin = createServiceClient()
   const { data: row } = await admin.from('timeclock').select('start').eq('id', id).maybeSingle()
   if (!row) return { ok: false, error: 'Pointage introuvable' }
@@ -55,7 +54,7 @@ export async function endShift(id: string): Promise<Result> {
 /** Modifie les horaires d'une ligne (Direction). */
 export async function updateTime(id: string, start: string, end: string | null): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('pointeuse')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
@@ -69,7 +68,7 @@ export async function updateTime(id: string, start: string, end: string | null):
 /** Supprime une ligne de pointage (Direction). */
 export async function deleteTime(id: string): Promise<Result> {
   try {
-    await requireAdmin()
+    await requireEdit('pointeuse')
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }

@@ -216,6 +216,7 @@ export const NAV: NavGroup[] = [
     { key: 'tombola',    label: 'Tombola',           icon: 'medal',     route: '/tombola' },
     { key: 'audit',      label: "Journal d'audit",   icon: 'clock',     route: '/audit', admin: true },
     { key: 'stats',      label: 'Statistiques',      icon: 'stats',     route: '/stats', admin: true },
+    { key: 'permissions', label: 'Permissions',      icon: 'shield',    route: '/permissions', admin: true },
   ]},
 ]
 
@@ -236,4 +237,5 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   tombola:      { title: 'Tombola', sub: 'Tirage au sort — grille partagée avec le service' },
   audit:        { title: "Journal d'audit", sub: 'Historique des actions du personnel' },
   stats:        { title: 'Statistiques', sub: "Indicateurs d'activité du service" },
+  permissions:  { title: 'Permissions', sub: 'Matrice des droits d’accès par grade et par catégorie' },
 }
