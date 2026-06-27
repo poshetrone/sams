@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Icons } from './Icons'
 import { NAV, GRADES, isAdminGrade } from '@/lib/constants'
 import { useApp } from '@/lib/app-context'
-import { createClient } from '@/lib/supabase/client'
+import { logout as logoutAction } from '@/lib/actions/auth'
 import { updateMyPhoto } from '@/lib/actions/profile'
 import { initialsOf } from '@/lib/format'
 import { compressImage } from '@/lib/image'
@@ -31,8 +31,7 @@ export default function Sidebar() {
   }
 
   const logout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await logoutAction()
     router.push('/login')
     router.refresh()
   }

@@ -1,8 +1,10 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { Transmit } from '@adonisjs/transmit-client'
 import { Icons } from '@/components/Icons'
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333').replace(/\/$/, '')
 
 export interface Notif {
   id: string // = id de la fusillade
@@ -81,30 +83,34 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Abonnement Realtime : nouvelle fusillade => notification (global, dans le shell)
+  // Abonnement temps réel (SSE) : nouvelle fusillade => notification (global)
   useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel('notif-fusillades')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'fusillades' }, (payload) => {
-        const f = payload.new as { id: string; title: string; zone: string | null; time: string | null; author: string | null }
-        console.log('[notif] INSERT fusillade reçu via Realtime :', f)
-        // Ne pas se notifier soi-même dans l'onglet qui vient de créer la fusillade
-        if (recentOwnFusillades.has(f.id)) {
-          recentOwnFusillades.delete(f.id)
-          console.log('[notif] ignorée (créée depuis cet onglet)')
-          return
-        }
-        const n: Notif = { id: f.id, title: f.title, zone: f.zone, time: f.time, read: false }
-        setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev].slice(0, 50)))
-        setToast(n)
-        window.setTimeout(() => setToast((t) => (t && t.id === n.id ? null : t)), 6000)
-        playBeep()
+    const transmit = new Transmit({ baseUrl: API_BASE })
+    const sub = transmit.subscription('rt:fusillades')
+    sub
+      .create()
+      .then(() => {
+        sub.onMessage((data: { action?: string; fusillade?: { id: string; title: string; zone: string | null; time: string | null } }) => {
+          // L'API diffuse `{ action:'insert', fusillade:{…} }` à la création.
+          if (data?.action !== 'insert' || !data.fusillade) return
+          const f = data.fusillade
+          // Ne pas se notifier soi-même dans l'onglet créateur
+          if (recentOwnFusillades.has(f.id)) {
+            recentOwnFusillades.delete(f.id)
+            return
+          }
+          const n: Notif = { id: f.id, title: f.title, zone: f.zone, time: f.time, read: false }
+          setNotifications((prev) => (prev.some((x) => x.id === n.id) ? prev : [n, ...prev].slice(0, 50)))
+          setToast(n)
+          window.setTimeout(() => setToast((t) => (t && t.id === n.id ? null : t)), 6000)
+          playBeep()
+        })
       })
-      .subscribe((status) => {
-        console.log('[notif] statut abonnement Realtime fusillades :', status)
-      })
-    return () => { supabase.removeChannel(channel) }
+      .catch(() => {})
+    return () => {
+      sub.delete().catch(() => {})
+      transmit.close()
+    }
   }, [])
 
   const markRead = useCallback((id: string) => {

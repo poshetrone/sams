@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import StatsView from '@/components/stats/StatsView'
 import Restricted from '@/components/Restricted'
@@ -10,10 +10,9 @@ export default async function StatsPage() {
   if ((await getServerAccess('stats')) === 'none')
     return <Restricted>Les statistiques sont réservées à la Direction.</Restricted>
 
-  const admin = createServiceClient()
-  const [{ data: members }, { data: patients }] = await Promise.all([
-    admin.from('members').select('*').order('created_at', { ascending: true }),
-    admin.from('patients').select('*').order('created_at', { ascending: true }),
+  const [members, patients] = await Promise.all([
+    apiGet<Member[]>('/members'),
+    apiGet<Patient[]>('/patients'),
   ])
-  return <StatsView members={(members as Member[]) || []} patients={(patients as Patient[]) || []} />
+  return <StatsView members={members ?? []} patients={patients ?? []} />
 }

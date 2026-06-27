@@ -1,32 +1,37 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { Transmit } from '@adonisjs/transmit-client'
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333').replace(/\/$/, '')
 
 /**
- * Abonne la vue aux changements Postgres (INSERT/UPDATE/DELETE) d'une ou
- * plusieurs tables et rafraîchit les données du Server Component à chaque
- * événement — donne un comportement « temps réel » partagé entre utilisateurs.
+ * Abonne la vue aux changements d'une ou plusieurs tables via les Server-Sent
+ * Events de l'API (@adonisjs/transmit) et rafraîchit les données du Server
+ * Component à chaque événement — comportement « temps réel » partagé entre
+ * utilisateurs. Remplace les channels Supabase.
  *
- * Prérequis côté Supabase : les tables doivent être dans la publication
- * `supabase_realtime` (voir supabase_realtime.sql).
+ * Côté API : chaque écriture diffuse sur le canal `rt:<table>` (BroadcastService).
  */
 export function useRealtime(tables: string | string[]) {
   const router = useRouter()
   const key = Array.isArray(tables) ? tables.join(',') : tables
 
   useEffect(() => {
-    const supabase = createClient()
+    const transmit = new Transmit({ baseUrl: API_BASE })
     const list = key.split(',')
-    const channel = supabase.channel(`rt-${key}`)
-    for (const table of list) {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-        router.refresh()
+    const subs = list.map((table) => transmit.subscription(`rt:${table}`))
+
+    Promise.all(
+      subs.map(async (sub) => {
+        await sub.create()
+        sub.onMessage(() => router.refresh())
       })
-    }
-    channel.subscribe()
+    ).catch(() => {})
+
     return () => {
-      supabase.removeChannel(channel)
+      subs.forEach((sub) => sub.delete().catch(() => {}))
+      transmit.close()
     }
   }, [key, router])
 }

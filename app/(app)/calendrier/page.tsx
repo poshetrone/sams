@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import Restricted from '@/components/Restricted'
 import CalendrierView from '@/components/calendrier/CalendrierView'
@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function CalendrierPage() {
   if ((await getServerAccess('calendrier')) === 'none') return <Restricted />
-  const admin = createServiceClient()
-  const { data } = await admin.from('calendar_events').select('*').order('day', { ascending: true })
-  return <CalendrierView events={(data as CalendarEvent[]) || []} />
+  const data = await apiGet<CalendarEvent[]>('/calendar-events')
+  return <CalendrierView events={data ?? []} />
 }

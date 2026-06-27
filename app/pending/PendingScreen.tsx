@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { logout as logoutAction } from '@/lib/actions/auth'
 import { Icons } from '@/components/Icons'
 import { initialsOf } from '@/lib/format'
 
@@ -8,8 +8,7 @@ export default function PendingScreen({ name, pseudo }: { name: string; pseudo: 
   const router = useRouter()
 
   const back = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await logoutAction()
     router.push('/login')
     router.refresh()
   }

@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import { Card, GradePill, SecTitle } from '@/components/ui'
 import Restricted from '@/components/Restricted'
@@ -10,9 +10,8 @@ export default async function AuditPage() {
   if ((await getServerAccess('audit')) === 'none')
     return <Restricted>Le journal d&apos;audit est réservé à la Direction.</Restricted>
 
-  const admin = createServiceClient()
-  const { data } = await admin.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200)
-  const log = (data as AuditEntry[]) || []
+  const data = await apiGet<AuditEntry[]>('/audit-log')
+  const log = data ?? []
 
   return (
     <div className="view-anim">

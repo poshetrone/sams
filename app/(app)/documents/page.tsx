@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import Restricted from '@/components/Restricted'
 import DocumentsView from '@/components/documents/DocumentsView'
@@ -12,11 +12,10 @@ export default async function DocumentsPage({
   searchParams: { patient?: string; type?: string; death?: string }
 }) {
   if ((await getServerAccess('documents')) === 'none') return <Restricted />
-  const admin = createServiceClient()
-  const { data } = await admin.from('patients').select('*').order('created_at', { ascending: true })
+  const data = await apiGet<Patient[]>('/patients')
   return (
     <DocumentsView
-      patients={(data as Patient[]) || []}
+      patients={data ?? []}
       initialPatientId={searchParams.patient}
       initialType={searchParams.type}
       death={searchParams.death === '1'}

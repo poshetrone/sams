@@ -1,4 +1,5 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
+import { getMe } from '@/lib/api/session'
 import { getServerAccess } from '@/lib/auth'
 import Restricted from '@/components/Restricted'
 import Overview from '@/components/dashboard/Overview'
@@ -8,11 +9,11 @@ export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   if ((await getServerAccess('dashboard')) === 'none') return <Restricted />
-  const admin = createServiceClient()
-  const [{ data: patients }, { data: members }, { count }] = await Promise.all([
-    admin.from('patients').select('*').order('created_at', { ascending: true }),
-    admin.from('members').select('*').order('created_at', { ascending: true }),
-    admin.from('accesses').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+  const [patients, members, me] = await Promise.all([
+    apiGet<Patient[]>('/patients'),
+    apiGet<Member[]>('/members'),
+    getMe(),
   ])
-  return <Overview patients={(patients as Patient[]) || []} members={(members as Member[]) || []} reqCount={count ?? 0} />
+  const reqCount = me?.reqCount ?? 0
+  return <Overview patients={patients ?? []} members={members ?? []} reqCount={reqCount} />
 }

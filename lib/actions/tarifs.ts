@@ -1,7 +1,6 @@
 'use server'
 import { revalidatePath } from 'next/cache'
-import { createServiceClient } from '@/lib/supabase/server'
-import { requireEdit } from '@/lib/auth'
+import { apiPost, apiDelete } from '@/lib/api/client'
 
 export interface TarifInput {
   id?: string
@@ -14,35 +13,13 @@ export interface TarifInput {
 type Result = { ok: boolean; error?: string }
 
 export async function saveTarif(input: TarifInput): Promise<Result> {
-  try {
-    await requireEdit('tarification')
-  } catch (e) {
-    return { ok: false, error: (e as Error).message }
-  }
-  if (!input.label.trim()) return { ok: false, error: 'Nom requis' }
-  const admin = createServiceClient()
-  const row = { label: input.label.trim(), sub: input.sub?.trim() || null, price: input.price || 0, icon: input.icon || 'cash' }
-  if (input.id) {
-    const { error } = await admin.from('tarifs').update(row).eq('id', input.id)
-    if (error) return { ok: false, error: error.message }
-  } else {
-    const { count } = await admin.from('tarifs').select('id', { count: 'exact', head: true })
-    const { error } = await admin.from('tarifs').insert({ ...row, ord: count ?? 0 })
-    if (error) return { ok: false, error: error.message }
-  }
-  revalidatePath('/tarification')
-  return { ok: true }
+  const res = await apiPost('/tarifs', input)
+  if (res.ok) revalidatePath('/tarification')
+  return res
 }
 
 export async function deleteTarif(id: string): Promise<Result> {
-  try {
-    await requireEdit('tarification')
-  } catch (e) {
-    return { ok: false, error: (e as Error).message }
-  }
-  const admin = createServiceClient()
-  const { error } = await admin.from('tarifs').delete().eq('id', id)
-  if (error) return { ok: false, error: error.message }
-  revalidatePath('/tarification')
-  return { ok: true }
+  const res = await apiDelete(`/tarifs/${id}`)
+  if (res.ok) revalidatePath('/tarification')
+  return res
 }

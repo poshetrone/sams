@@ -1,45 +1,19 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Icons, Laurel } from '@/components/Icons'
 
-/** Écran de connexion SAMS — fidèle au proto, branché sur Discord OAuth (Supabase). */
-export default function LoginScreen() {
-  // Client Supabase initialisé une seule fois (avant tout clic) — évite la
-  // course à l'init qui obligeait à cliquer deux fois.
-  const [supabase] = useState(() => createClient())
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333').replace(/\/$/, '')
 
-  const signIn = async () => {
+/** Écran de connexion SAMS — fidèle au proto, branché sur Discord OAuth (api-sams). */
+export default function LoginScreen() {
+  const [loading, setLoading] = useState(false)
+  const [error] = useState<string | null>(null)
+
+  const signIn = () => {
     if (loading) return
     setLoading(true)
-    setError(null)
-    try {
-      // On pilote la redirection nous-mêmes (skipBrowserRedirect) pour qu'un
-      // seul clic suffise, sans dépendre du timing interne du SDK.
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: true,
-        },
-      })
-      if (error) {
-        setError(error.message)
-        setLoading(false)
-        return
-      }
-      if (data?.url) {
-        window.location.href = data.url
-      } else {
-        setError('URL de connexion Discord indisponible.')
-        setLoading(false)
-      }
-    } catch (e) {
-      setError((e as Error).message || 'Erreur de connexion')
-      setLoading(false)
-    }
+    // L'API gère tout le flow OAuth Discord puis renvoie sur /auth/callback?token=…
+    window.location.href = `${API_BASE}/api/v1/auth/discord/redirect`
   }
 
   return (

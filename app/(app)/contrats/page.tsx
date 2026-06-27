@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import Restricted from '@/components/Restricted'
 import ContractsView from '@/components/contrats/ContractsView'
@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function ContratsPage() {
   if ((await getServerAccess('contrats')) === 'none') return <Restricted />
-  const admin = createServiceClient()
-  const { data } = await admin.from('contracts').select('*').order('created_at', { ascending: true })
-  return <ContractsView contracts={(data as Contract[]) || []} />
+  const data = await apiGet<Contract[]>('/contracts')
+  return <ContractsView contracts={data ?? []} />
 }
