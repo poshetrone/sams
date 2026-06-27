@@ -51,22 +51,11 @@ export async function apiGet<T = unknown>(path: string): Promise<T | null> {
   let res: Response;
   try {
     res = await request("GET", path);
-  } catch (e) {
-    // Diagnostic : échec réseau (API injoignable, IPv6/IPv4, port…).
-    console.error(`[api] GET ${path} → ÉCHEC FETCH:`, (e as Error).message, `(base=${API_BASE})`);
+  } catch {
+    // API injoignable / non authentifié.
     return null;
   }
-  if (!res.ok) {
-    const raw = cookies().get(TOKEN_COOKIE)?.value ?? "";
-    let dec = raw;
-    try {
-      dec = decodeURIComponent(raw);
-    } catch {}
-    console.error(
-      `[api] GET ${path} → HTTP ${res.status} | base=${API_BASE} | raw(${raw.length},%=${raw.includes("%")}) decoded(${dec.length})="${dec.slice(0, 14)}…"`,
-    );
-    return null;
-  }
+  if (!res.ok) return null;
   const json = await res.json().catch(() => null);
   if (json && typeof json === "object" && "data" in json)
     return (json as { data: T }).data;
