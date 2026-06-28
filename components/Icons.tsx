@@ -58,6 +58,8 @@ export const Icons: Record<string, IconComp> = {
   print: (p) => <Ic {...p}><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M8 17h8v4H8z"/></Ic>,
   edit: (p) => <Ic {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></Ic>,
   shield: (p) => <Ic {...p}><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></Ic>,
+  help: (p) => <Ic {...p}><circle cx="12" cy="12" r="9"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.4 1c0 1.8-2.6 2.4-2.6 4"/><path d="M12 17.5h.01"/></Ic>,
+  image: (p) => <Ic {...p}><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m4 17 4.5-4.5a2 2 0 0 1 2.8 0L16 17"/><path d="m14 15 1.5-1.5a2 2 0 0 1 2.8 0L20 15"/></Ic>,
   brain: (p) => <Ic {...p}><path d="M9.5 5a2.5 2.5 0 0 0-2.5 2.5c-1.4.3-2.5 1.5-2.5 3a3 3 0 0 0 .8 2 3 3 0 0 0 1.7 4.2A2.5 2.5 0 0 0 12 19V5.5A2.5 2.5 0 0 0 9.5 5z"/><path d="M14.5 5a2.5 2.5 0 0 1 2.5 2.5c1.4.3 2.5 1.5 2.5 3a3 3 0 0 1-.8 2 3 3 0 0 1-1.7 4.2A2.5 2.5 0 0 1 12 19"/></Ic>,
   pill: (p) => <Ic {...p}><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(45 12 12)"/><path d="m8.5 8.5 7 7"/></Ic>,
   pause: (p) => <Ic {...p}><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></Ic>,

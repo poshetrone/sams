@@ -171,6 +171,17 @@ export interface Tombola {
   updated_at?: string
 }
 
+export type HelpBlock =
+  | { id: string; type: 'heading'; text: string }
+  | { id: string; type: 'text'; text: string }
+  | { id: string; type: 'image'; url: string; caption?: string }
+
+export interface HelpPage {
+  id: number
+  blocks: HelpBlock[]
+  updated_at?: string
+}
+
 export interface FormationRow {
   key: string
   label: string

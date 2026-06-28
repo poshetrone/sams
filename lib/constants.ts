@@ -223,6 +223,9 @@ export const NAV: NavGroup[] = [
     { key: 'stats',      label: 'Statistiques',      icon: 'stats',     route: '/stats', admin: true },
     { key: 'permissions', label: 'Permissions',      icon: 'shield',    route: '/permissions', admin: true },
   ]},
+  { group: 'Aide', items: [
+    { key: 'aide', label: 'Aide & guide', icon: 'help', route: '/aide' },
+  ]},
 ]
 
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
@@ -243,4 +246,5 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   audit:        { title: "Journal d'audit", sub: 'Historique des actions du personnel' },
   stats:        { title: 'Statistiques', sub: "Indicateurs d'activité du service" },
   permissions:  { title: 'Permissions', sub: 'Matrice des droits d’accès par grade et par catégorie' },
+  aide:         { title: 'Aide & guide', sub: 'Documentation et guide d’utilisation du service' },
 }
