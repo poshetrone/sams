@@ -18,9 +18,9 @@ export async function endShift(id: string): Promise<Result> {
   return res
 }
 
-/** Modifie les horaires d'une ligne (Direction). */
-export async function updateTime(id: string, start: string, end: string | null): Promise<Result> {
-  const res = await apiPut(`/timeclock/${id}`, { start, end })
+/** Modifie les horaires et la date d'une ligne (Direction). `date` au format "DD/MM/YYYY". */
+export async function updateTime(id: string, start: string, end: string | null, date?: string): Promise<Result> {
+  const res = await apiPut(`/timeclock/${id}`, { start, end, date })
   if (res.ok) revalidatePath('/pointeuse')
   return res
 }

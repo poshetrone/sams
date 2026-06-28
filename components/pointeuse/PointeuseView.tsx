@@ -119,22 +119,34 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
   )
 }
 
+/* Conversions entre "DD/MM/YYYY" (affichage / API) et "YYYY-MM-DD" (input type=date). */
+const toInputDate = (ddmmyyyy: string) => {
+  const [d, mo, y] = ddmmyyyy.split('/')
+  return y && mo && d ? `${y}-${mo}-${d}` : ''
+}
+const toApiDate = (yyyymmdd: string) => {
+  const [y, mo, d] = yyyymmdd.split('-')
+  return y && mo && d ? `${d}/${mo}/${y}` : ''
+}
+
 function EditTimeModal({ row, onClose, onSaved }: { row: Timeclock; onClose: () => void; onSaved: () => void }) {
+  const [date, setDate] = useState(toInputDate(dayOf(row)))
   const [start, setStart] = useState(row.start_at ? parisHM(row.start_at) : row.start || '')
   const [end, setEnd] = useState(row.end_at ? parisHM(row.end_at) : row.end || '')
   const [busy, setBusy] = useState(false)
   const preview = start && end ? fmtDur(diffMin(start, end)) : '—'
   const save = async () => {
-    if (!start) return
+    if (!start || !date) return
     setBusy(true)
-    await updateTime(row.id, start, end || null)
+    await updateTime(row.id, start, end || null, toApiDate(date))
     setBusy(false)
     onSaved()
   }
   return (
     <Modal onClose={onClose} title="Modifier les horaires" icon={<Icons.clock size={20} />}>
       <div className="editor-panel">
-        <div style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 14 }}>{row.name} · {dayOf(row)} · heure de Paris</div>
+        <div style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 14 }}>{row.name} · heure de Paris</div>
+        <div className="ep-field" style={{ marginBottom: 14 }}><label>Date</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div className="ep-field"><label>Début</label><input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></div>
           <div className="ep-field"><label>Fin <span style={{ color: 'var(--ink-500)', fontWeight: 400 }}>(vide = en cours)</span></label><input type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
@@ -142,7 +154,7 @@ function EditTimeModal({ row, onClose, onSaved }: { row: Timeclock; onClose: () 
         <div style={{ fontSize: 13, color: 'var(--ink-400)', margin: '4px 0 16px' }}>Durée calculée : <b style={{ color: 'var(--gold-300)' }}>{preview}</b></div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>Annuler</button>
-          <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}><Icons.check size={15} /> Enregistrer</button>
+          <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy || !start || !date}><Icons.check size={15} /> Enregistrer</button>
         </div>
       </div>
     </Modal>
