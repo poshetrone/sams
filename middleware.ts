@@ -14,10 +14,20 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get(TOKEN_COOKIE)?.value
   if (!token && !isPublic) {
-    // Redirection relative : derrière le reverse-proxy (sortie `standalone`,
-    // HOSTNAME=0.0.0.0), `request.nextUrl` reconstruit l'origine en
-    // `http://0.0.0.0:3000`. Un `Location` relatif reste sur le vrai domaine.
-    return new NextResponse(null, { status: 307, headers: { location: '/login' } })
+    // Le middleware exige une URL **absolue** (Next la repasse par `new URL()`,
+    // un `Location` relatif lève `ERR_INVALID_URL`). Mais `request.nextUrl`
+    // reconstruit l'origine depuis l'adresse d'écoute (HOSTNAME=0.0.0.0) →
+    // `http://0.0.0.0:3000`. On rebâtit donc l'URL à partir des en-têtes posés
+    // par le reverse-proxy (`x-forwarded-host` / `x-forwarded-proto`), qui
+    // portent le vrai domaine public.
+    const host =
+      request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      request.nextUrl.host
+    const proto =
+      request.headers.get('x-forwarded-proto')?.split(',')[0].trim() ||
+      request.nextUrl.protocol.replace(':', '')
+    return NextResponse.redirect(new URL('/login', `${proto}://${host}`))
   }
 
   return NextResponse.next()
