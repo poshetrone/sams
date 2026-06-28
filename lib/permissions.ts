@@ -31,7 +31,7 @@ export const CATEGORIES: PermCategory[] = NAV.flatMap((g) =>
 export const CATEGORY_KEYS: string[] = CATEGORIES.map((c) => c.key)
 
 /** Catégories sensibles : 'none' par défaut sauf pour la Direction. */
-export const SENSITIVE_CATEGORIES = ['access', 'audit', 'permissions'] as const
+export const SENSITIVE_CATEGORIES = ['access', 'audit', 'permissions', 'inactivite'] as const
 
 const ADMIN = ADMIN_GRADES as readonly string[]
 
