@@ -58,6 +58,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
   const start = async () => { setBusy(true); await startShift(); setBusy(false); router.refresh() }
   const end = async () => { if (!myOpen) return; setBusy(true); await endShift(myOpen.id); setBusy(false); router.refresh() }
   const del = async (id: string) => { setBusy(true); await deleteTime(id); setBusy(false); router.refresh() }
+  const endRow = async (id: string) => { setBusy(true); await endShift(id); setBusy(false); router.refresh() }
 
   return (
     <div className="view-anim">
@@ -100,6 +101,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
                 {isAdmin && (
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: 6 }}>
+                      {isOpen(t) && <div className="icon-btn" style={{ width: 32, height: 32 }} title="Arrêter le service" onClick={() => !busy && endRow(t.id)}><Icons.pause size={14} /></div>}
                       <div className="icon-btn" style={{ width: 32, height: 32 }} title="Modifier les horaires" onClick={() => setEditRow(t)}><Icons.edit size={14} /></div>
                       <div className="icon-btn" style={{ width: 32, height: 32 }} title="Supprimer la ligne" onClick={() => del(t.id)}><Icons.trash size={14} /></div>
                     </div>
