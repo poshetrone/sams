@@ -14,9 +14,10 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get(TOKEN_COOKIE)?.value
   if (!token && !isPublic) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    // Redirection relative : derrière le reverse-proxy (sortie `standalone`,
+    // HOSTNAME=0.0.0.0), `request.nextUrl` reconstruit l'origine en
+    // `http://0.0.0.0:3000`. Un `Location` relatif reste sur le vrai domaine.
+    return new NextResponse(null, { status: 307, headers: { location: '/login' } })
   }
 
   return NextResponse.next()
