@@ -14,6 +14,12 @@ export interface Member {
   poles: string[]
   formations: string[]
   warnings: number
+  /** Type d'absence en cours (clé de ABSENCE_TYPES ou 'autre') — null si présent. */
+  absence: string | null
+  /** Raison libre de l'absence (saisie par l'employé). */
+  absence_reason: string | null
+  /** Fin d'absence "JJ/MM/AAAA" — null si sans échéance. */
+  absence_until: string | null
   prime: boolean
   bonus: number
   contract_photos: ContractPhoto[]

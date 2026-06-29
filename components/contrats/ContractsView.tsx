@@ -1,12 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { Badge, Card } from '@/components/ui'
 import { SecTitle } from '@/components/ui'
 import Modal from '@/components/Modal'
 import { MUTUELLES, mutuellePrice } from '@/lib/constants'
-import { fmtMoney } from '@/lib/format'
+import { fmtMoney, parseFrDate, fmtFrDate, isExpiredFrDate } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { saveContract, deleteContract, type ContractInput } from '@/lib/actions/contracts'
 import { handleImageUpload } from '@/lib/image'
@@ -14,6 +14,8 @@ import type { Contract } from '@/lib/types'
 
 const TIER_BADGE: Record<string, string> = { actif: 'ok', 'expiré': 'crit', 'en attente': 'warn' }
 const contractPrice = (c: { type: string; tier: string }) => mutuellePrice(c.type as 'standard' | 'premium', c.tier)
+/** Statut effectif : un contrat dont l'échéance est dépassée est considéré « expiré ». */
+const effectiveStatus = (c: Contract) => (isExpiredFrDate(c.end) ? 'expiré' : c.status)
 
 function FormulaCard({ type }: { type: 'standard' | 'premium' }) {
   const m = MUTUELLES[type]
@@ -62,9 +64,28 @@ export default function ContractsView({ contracts }: { contracts: Contract[] }) 
   const { search, canEdit } = useApp()
   const editable = canEdit('contrats')
   const [modal, setModal] = useState<Contract | 'new' | null>(null)
+  const [renewing, setRenewing] = useState<string | null>(null)
 
   const list = contracts.filter((c) => !search || c.company.toLowerCase().includes(search.toLowerCase()))
-  const totalActif = contracts.filter((c) => c.status === 'actif').reduce((s, c) => s + contractPrice(c), 0)
+  const totalActif = contracts.filter((c) => effectiveStatus(c) === 'actif').reduce((s, c) => s + contractPrice(c), 0)
+
+  /** Renouvelle le contrat d'une semaine : repousse l'échéance de 7 jours et le réactive. */
+  const renew = async (c: Contract, e: MouseEvent) => {
+    e.stopPropagation()
+    setRenewing(c.id)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const end = parseFrDate(c.end)
+    const base = end && end.getTime() > today.getTime() ? end : today // repart d'aujourd'hui si déjà expiré
+    base.setDate(base.getDate() + 7)
+    const res = await saveContract({
+      id: c.id, company: c.company, logo: c.logo, type: c.type, tier: c.tier,
+      employees: c.employees ?? '', status: 'actif', start: c.start || '',
+      end: fmtFrDate(base), details: c.details || '',
+    })
+    setRenewing(null)
+    if (res.ok) router.refresh()
+  }
 
   return (
     <div className="view-anim">
@@ -88,17 +109,30 @@ export default function ContractsView({ contracts }: { contracts: Contract[] }) 
         {list.map((c) => {
           const m = MUTUELLES[c.type as 'standard' | 'premium']
           const premium = c.type === 'premium'
+          const status = effectiveStatus(c)
+          const expired = status === 'expiré'
           return (
-            <Card key={c.id} className="contract-card" onClick={editable ? () => setModal(c) : undefined} style={{ cursor: editable ? 'pointer' : 'default' }}>
+            <Card key={c.id} className="contract-card" onClick={editable ? () => setModal(c) : undefined} style={{ cursor: editable ? 'pointer' : 'default', ...(expired ? { borderColor: 'var(--crit)' } : null) }}>
               <div className="cc-head">
                 <CompanyLogo logo={c.logo} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h4 style={{ fontSize: 15, color: 'var(--ink-100)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.company}</h4>
                   <div style={{ marginTop: 5, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span className={`badge ${premium ? 'gold' : 'info'}`}>{m?.label}</span>
-                    <Badge cls={TIER_BADGE[c.status] || 'info'}>{c.status}</Badge>
+                    <Badge cls={TIER_BADGE[status] || 'info'}>{status}</Badge>
                   </div>
                 </div>
+                {editable && (
+                  <button
+                    className="btn btn-ghost"
+                    title="Renouveler le contrat d'une semaine"
+                    onClick={(e) => renew(c, e)}
+                    disabled={renewing === c.id}
+                    style={{ alignSelf: 'flex-start', padding: 8, ...(expired ? { borderColor: 'var(--gold-glow)', color: 'var(--gold-300)' } : null) }}
+                  >
+                    <Icons.reset size={15} />
+                  </button>
+                )}
               </div>
               <p className="cc-details">{c.details}</p>
               <div className="cc-foot">

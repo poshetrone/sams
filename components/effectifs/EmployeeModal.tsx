@@ -3,7 +3,8 @@ import { useState } from 'react'
 import Modal from '@/components/Modal'
 import { Icons } from '@/components/Icons'
 import { GRADES, POLES } from '@/lib/constants'
-import { fmtPhone } from '@/lib/format'
+import { fmtPhone, frToInputDate, inputToFrDate } from '@/lib/format'
+import AbsenceFields from '@/components/absence/AbsenceFields'
 import { createMember, updateMember, type MemberInput } from '@/lib/actions/members'
 import type { Member } from '@/lib/types'
 
@@ -41,8 +42,11 @@ export default function EmployeeModal({
           warnings: employee.warnings || 0,
           phone: employee.phone || '',
           since: employee.since || '',
+          absence: employee.absence || '',
+          absence_reason: employee.absence_reason || '',
+          absence_until: employee.absence_until || '',
         }
-      : { name: '', grade: 'ambulancier', discord: '', discord_id: '', matricule: '', status: 'service', poles: [], formations: [], warnings: 0, phone: '' }
+      : { name: '', grade: 'ambulancier', discord: '', discord_id: '', matricule: '', status: 'service', poles: [], formations: [], warnings: 0, phone: '', absence: '', absence_reason: '', absence_until: '' }
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -125,6 +129,17 @@ export default function EmployeeModal({
             ))}
           </select>
         </div>
+        <AbsenceFields
+          value={{ absence: f.absence || '', reason: f.absence_reason || '', until: frToInputDate(f.absence_until) }}
+          onChange={(v) =>
+            setF((prev) => ({
+              ...prev,
+              absence: v.absence,
+              absence_reason: v.reason,
+              absence_until: v.absence ? inputToFrDate(v.until) : '',
+            }))
+          }
+        />
         <div className="ep-field">
           <label>Avertissements</label>
           <div className="chips">

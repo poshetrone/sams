@@ -7,7 +7,7 @@ import Modal from '@/components/Modal'
 import EmployeeModal from './EmployeeModal'
 import ContractEditor from './ContractEditor'
 import ContractCell from './ContractCell'
-import { GRADES, POLES, MEMBER_STATUS, type GradeKey } from '@/lib/constants'
+import { GRADES, POLES, MEMBER_STATUS, absenceBadge, type GradeKey } from '@/lib/constants'
 import { fmtPhone, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { deleteMember } from '@/lib/actions/members'
@@ -100,6 +100,7 @@ export default function EffectifsView({ members }: { members: Member[] }) {
           <tbody>
             {filtered.map((m) => {
               const ms = MEMBER_STATUS[m.status] || MEMBER_STATUS.service
+              const abs = absenceBadge(m.absence, m.absence_reason)
               return (
                 <tr key={m.id} onClick={() => isAdmin && setModal({ employee: m })} style={{ cursor: isAdmin ? 'pointer' : 'default' }}>
                   <td>
@@ -149,8 +150,11 @@ export default function EffectifsView({ members }: { members: Member[] }) {
                   </td>
                   <td style={{ color: 'var(--ink-400)' }}>{m.matricule}</td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <Badge cls={ms.cls}>{ms.label}</Badge>
+                      {abs && (
+                        <Badge cls={abs.cls}>{abs.label}{m.absence_until ? ` · ${m.absence_until}` : ''}</Badge>
+                      )}
                       <WarnCrosses n={m.warnings || 0} />
                     </div>
                   </td>

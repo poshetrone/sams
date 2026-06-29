@@ -15,6 +15,9 @@ export interface MemberInput {
   formations?: string[]
   warnings?: number
   since?: string
+  absence?: string | null
+  absence_reason?: string | null
+  absence_until?: string | null
 }
 
 type Result = { ok: boolean; error?: string }
@@ -34,6 +37,40 @@ export async function updateMember(input: MemberInput): Promise<Result> {
 export async function deleteMember(id: string, name: string): Promise<Result> {
   const res = await apiDelete(`/members/${id}`, { name })
   if (res.ok) revalidatePath('/effectifs')
+  return res
+}
+
+/* ---------- Absence (vacances, maladie…) ---------- */
+export interface AbsenceInput {
+  absence: string | null
+  absence_reason?: string | null
+  absence_until?: string | null
+}
+
+const absencePayload = (a: AbsenceInput) => ({
+  absence: a.absence,
+  absence_reason: a.absence ? a.absence_reason || null : null,
+  absence_until: a.absence ? a.absence_until || null : null,
+})
+
+/** Gestion (Suivi du pointage) : définit l'absence d'un employé donné. */
+export async function setAbsence(id: string, input: AbsenceInput): Promise<Result> {
+  const res = await apiPatch(`/members/${id}/absence`, absencePayload(input))
+  if (res.ok) {
+    revalidatePath('/inactivite')
+    revalidatePath('/effectifs')
+  }
+  return res
+}
+
+/** Self-service : l'employé connecté définit sa propre absence. */
+export async function setMyAbsence(input: AbsenceInput): Promise<Result> {
+  const res = await apiPatch('/me/absence', absencePayload(input))
+  if (res.ok) {
+    revalidatePath('/mon-absence')
+    revalidatePath('/inactivite')
+    revalidatePath('/effectifs')
+  }
   return res
 }
 

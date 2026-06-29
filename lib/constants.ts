@@ -72,6 +72,29 @@ export const MEMBER_STATUS: Record<string, StatusDef> = {
   formation:    { label: 'Formation',    cls: 'gold' },
 }
 
+/** Motifs d'absence prédéfinis d'un employé. Affichés dans le suivi de pointage. */
+export const ABSENCE_TYPES: Record<string, StatusDef> = {
+  indispo: { label: 'Indisponible', cls: 'info' },
+}
+
+/** Clé sentinelle pour un motif personnalisé (raison libre). */
+export const ABSENCE_CUSTOM = 'autre'
+
+/**
+ * Libellé + couleur d'affichage d'une absence, à partir du motif type et
+ * de la raison libre. Renvoie null si l'employé est présent.
+ */
+export function absenceBadge(
+  absence: string | null | undefined,
+  reason?: string | null
+): StatusDef | null {
+  if (!absence) return null
+  const def = ABSENCE_TYPES[absence]
+  if (def) return { label: reason ? `${def.label} — ${reason}` : def.label, cls: def.cls }
+  // Motif personnalisé : la raison libre fait office de libellé.
+  return { label: reason || 'Absent', cls: 'info' }
+}
+
 export const CARE_STATUS: Record<string, StatusDef> = {
   ambulatoire: { label: 'Ambulatoire', cls: 'ok' },
   admis:       { label: 'Admis',       cls: 'warn' },
@@ -204,6 +227,7 @@ export const NAV: NavGroup[] = [
     { key: 'dashboard',  label: 'Tableau de bord', icon: 'dashboard', route: '/dashboard' },
     { key: 'calendrier', label: 'Calendrier',      icon: 'calendar',  route: '/calendrier' },
     { key: 'trombi',     label: 'Trombinoscope',   icon: 'patients',  route: '/trombinoscope' },
+    { key: 'absence',    label: 'Mon absence',     icon: 'calendar',  route: '/mon-absence' },
   ]},
   { group: 'Médical', items: [
     { key: 'patients',     label: 'Dossiers patients',   icon: 'patients',  route: '/patients' },
@@ -233,6 +257,7 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard:    { title: 'Tableau de bord', sub: "Vue d'ensemble du service médical" },
   calendrier:   { title: 'Calendrier 2026', sub: 'Agenda partagé du service — tout le monde peut écrire' },
   trombi:       { title: 'Trombinoscope', sub: 'Mur du service — partagez votre photo et discutez' },
+  absence:      { title: 'Mon absence', sub: 'Déclarez votre indisponibilité — visible dans le suivi de pointage' },
   patients:     { title: 'Dossiers patients', sub: 'Gestion des fiches et antécédents' },
   documents:    { title: 'Documents médicaux', sub: 'Générer, éditer et archiver les pièces officielles' },
   fusillade:    { title: 'Fusillades & interventions', sub: 'Cartographie des interventions et triage des blessés' },

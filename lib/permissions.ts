@@ -33,6 +33,12 @@ export const CATEGORY_KEYS: string[] = CATEGORIES.map((c) => c.key)
 /** Catégories sensibles : 'none' par défaut sauf pour la Direction. */
 export const SENSITIVE_CATEGORIES = ['access', 'audit', 'permissions', 'inactivite'] as const
 
+/**
+ * Catégories en libre-service : niveau 'edit' par défaut pour TOUS les membres
+ * (chacun gère sa propre donnée). La Direction peut restreindre via la matrice.
+ */
+export const SELF_SERVICE_CATEGORIES = ['absence'] as const
+
 const ADMIN = ADMIN_GRADES as readonly string[]
 
 export const isDirection = (grade: string | null | undefined): boolean =>
@@ -53,6 +59,7 @@ export type PermMap = Record<string, AccessLevel>
 export function defaultAccess(grade: string | null | undefined, category: string): AccessLevel {
   if (isDirection(grade)) return 'edit'
   if ((SENSITIVE_CATEGORIES as readonly string[]).includes(category)) return 'none'
+  if ((SELF_SERVICE_CATEGORIES as readonly string[]).includes(category)) return 'edit'
   return 'view'
 }
 

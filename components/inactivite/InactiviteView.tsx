@@ -1,17 +1,24 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { Card, GradePill, KPI, SecTitle } from '@/components/ui'
-import { initialsOf, parisDate } from '@/lib/format'
+import Modal from '@/components/Modal'
+import { initialsOf, parisDate, frToInputDate, inputToFrDate } from '@/lib/format'
+import { absenceBadge } from '@/lib/constants'
+import AbsenceFields, { type AbsenceState } from '@/components/absence/AbsenceFields'
+import { useApp } from '@/lib/app-context'
 import { useRealtime } from '@/lib/useRealtime'
+import { setAbsence } from '@/lib/actions/members'
 import type { Member, Timeclock } from '@/lib/types'
 
 const DAY = 86400000
 
-/** Filtres rapides : en service / inactifs (jours) / jamais pointé. */
+/** Filtres rapides : en service / absents / inactifs (jours) / jamais pointé. */
 const FILTERS = [
   { key: 'all', label: 'Tous' },
   { key: 'onduty', label: 'En service' },
+  { key: 'absent', label: 'Absents' },
   { key: 'inactive', label: "Jours d'inactivité" },
   { key: 'never', label: 'Jamais' },
 ] as const
@@ -53,9 +60,13 @@ export default function InactiviteView({
   timeclock: Timeclock[]
 }) {
   useRealtime(['timeclock', 'members'])
+  const router = useRouter()
+  const { canEdit } = useApp()
+  const editable = canEdit('inactivite')
   const [now, setNow] = useState(() => Date.now())
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('all')
+  const [absRow, setAbsRow] = useState<Member | null>(null)
 
   // Rafraîchit la durée d'inactivité chaque minute.
   useEffect(() => {
@@ -63,7 +74,7 @@ export default function InactiviteView({
     return () => clearInterval(iv)
   }, [])
 
-  // Inactivité par membre (dernier service connu).
+  // Inactivité par membre (dernier service connu) + absence éventuelle.
   const rows = useMemo(() => {
     return members
       .map((m) => {
@@ -78,16 +89,18 @@ export default function InactiviteView({
           return s != null && (acc == null || s > acc) ? s : acc
         }, null)
         const days = open ? 0 : lastMs == null ? Infinity : Math.floor((now - lastMs) / DAY)
-        return { m, lastMs, open, days }
+        // Une absence n'est prise en compte que si l'employé n'est pas en service.
+        const absent = !open && !!m.absence
+        return { m, lastMs, open, days, absent }
       })
-      // Ordre de la liste : 1) en service, 2) jours d'inactivité (du plus long
-      // au plus court), 3) jamais pointé.
+      // Ordre : 1) en service, 2) absents, 3) jours d'inactivité (décroissant),
+      // 4) jamais pointé.
       .sort((a, b) => {
-        const rank = (r: { open: boolean; days: number }) =>
-          r.open ? 0 : !isFinite(r.days) ? 2 : 1
+        const rank = (r: { open: boolean; absent: boolean; days: number }) =>
+          r.open ? 0 : r.absent ? 1 : !isFinite(r.days) ? 3 : 2
         const rd = rank(a) - rank(b)
         if (rd) return rd
-        if (rank(a) === 1 && a.days !== b.days) return b.days - a.days
+        if (rank(a) === 2 && a.days !== b.days) return b.days - a.days
         return a.m.name.localeCompare(b.m.name)
       })
   }, [members, timeclock, now])
@@ -97,22 +110,25 @@ export default function InactiviteView({
     return rows.filter((r) => {
       if (q && !r.m.name.toLowerCase().includes(q)) return false
       if (filter === 'onduty') return r.open
-      if (filter === 'never') return !isFinite(r.days)
-      if (filter === 'inactive') return !r.open && isFinite(r.days)
+      if (filter === 'absent') return r.absent
+      if (filter === 'never') return !r.absent && !isFinite(r.days)
+      if (filter === 'inactive') return !r.open && !r.absent && isFinite(r.days)
       return true
     })
   }, [rows, filter, query])
 
-  // KPIs alignés sur les 3 groupes.
+  // KPIs alignés sur les groupes.
   const onDutyCount = rows.filter((r) => r.open).length
-  const inactiveCount = rows.filter((r) => !r.open && isFinite(r.days)).length
-  const neverCount = rows.filter((r) => !isFinite(r.days)).length
+  const absentCount = rows.filter((r) => r.absent).length
+  const inactiveCount = rows.filter((r) => !r.open && !r.absent && isFinite(r.days)).length
+  const neverCount = rows.filter((r) => !r.absent && !isFinite(r.days)).length
 
   return (
     <div className="view-anim">
-      <div className="kpi-grid" style={{ marginBottom: 24 }}>
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(5,1fr)', marginBottom: 24 }}>
         <KPI label="Effectif total" val={members.length} icon="patients" />
         <KPI label="En service" val={onDutyCount} icon="pulse" />
+        <KPI label="Absents" val={absentCount} icon="calendar" />
         <KPI label="Jours d'inactivité" val={inactiveCount} icon="clock" />
         <KPI label="Jamais pointé" val={neverCount} icon="pause" />
       </div>
@@ -161,17 +177,19 @@ export default function InactiviteView({
       </div>
 
       <Card style={{ overflowX: 'auto' }}>
-        <table className="tbl" style={{ minWidth: 720 }}>
+        <table className="tbl" style={{ minWidth: 760 }}>
           <thead>
             <tr>
               <th>Employé</th>
               <th>Grade</th>
               <th>Dernier service</th>
-              <th style={{ textAlign: 'right' }}>Inactivité</th>
+              <th style={{ textAlign: 'right' }}>État</th>
+              {editable && <th style={{ textAlign: 'right' }}>Absence</th>}
             </tr>
           </thead>
           <tbody>
-            {visible.map(({ m, lastMs, open, days }) => {
+            {visible.map(({ m, lastMs, open, days, absent }) => {
+              const abs = absent ? absenceBadge(m.absence, m.absence_reason) : null
               const s = sev(days, open)
               return (
                 <tr key={m.id}>
@@ -190,17 +208,37 @@ export default function InactiviteView({
                     {open ? 'En service' : lastMs != null ? parisDate(lastMs) : '—'}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <span className={`badge ${s.cls}`}>
-                      <span className="b-dot"></span>
-                      {s.label}
-                    </span>
+                    {abs ? (
+                      <span className={`badge ${abs.cls}`} title={m.absence_until ? `Jusqu'au ${m.absence_until}` : undefined}>
+                        <Icons.calendar size={11} />
+                        {abs.label}
+                        {m.absence_until ? ` · jusqu'au ${m.absence_until}` : ''}
+                      </span>
+                    ) : (
+                      <span className={`badge ${s.cls}`}>
+                        <span className="b-dot"></span>
+                        {s.label}
+                      </span>
+                    )}
                   </td>
+                  {editable && (
+                    <td style={{ textAlign: 'right' }}>
+                      <div
+                        className="icon-btn"
+                        style={{ width: 32, height: 32, display: 'inline-flex', ...(abs ? { color: 'var(--gold-300)', borderColor: 'var(--gold-glow)' } : null) }}
+                        title={abs ? "Modifier / lever l'absence" : 'Déclarer une absence'}
+                        onClick={() => setAbsRow(m)}
+                      >
+                        <Icons.calendar size={15} />
+                      </div>
+                    </td>
+                  )}
                 </tr>
               )
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>
+                <td colSpan={editable ? 5 : 4} style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>
                   Aucun employé ne correspond à ce filtre.
                 </td>
               </tr>
@@ -208,6 +246,78 @@ export default function InactiviteView({
           </tbody>
         </table>
       </Card>
+
+      {absRow && (
+        <AbsenceModal
+          member={absRow}
+          onClose={() => setAbsRow(null)}
+          onSaved={() => {
+            setAbsRow(null)
+            router.refresh()
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function AbsenceModal({
+  member,
+  onClose,
+  onSaved,
+}: {
+  member: Member
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [f, setF] = useState<AbsenceState>({
+    absence: member.absence || '',
+    reason: member.absence_reason || '',
+    until: frToInputDate(member.absence_until),
+  })
+  const [busy, setBusy] = useState(false)
+
+  const save = async () => {
+    setBusy(true)
+    await setAbsence(member.id, {
+      absence: f.absence || null,
+      absence_reason: f.reason,
+      absence_until: f.absence ? inputToFrDate(f.until) : null,
+    })
+    setBusy(false)
+    onSaved()
+  }
+  const clear = async () => {
+    setBusy(true)
+    await setAbsence(member.id, { absence: null })
+    setBusy(false)
+    onSaved()
+  }
+
+  return (
+    <Modal onClose={onClose} title="Absence de l'employé" icon={<Icons.calendar size={20} />}>
+      <div className="editor-panel">
+        <div style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 16 }}>
+          <b style={{ color: 'var(--ink-100)' }}>{member.name}</b> — déclarez un motif d&apos;absence
+          pour qu&apos;il apparaisse dans le suivi de pointage.
+        </div>
+
+        <AbsenceFields value={f} onChange={setF} />
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+          {member.absence && (
+            <button className="btn-refuse" onClick={clear} disabled={busy} title="Lever l'absence">
+              <Icons.x size={15} /> Lever l&apos;absence
+            </button>
+          )}
+          <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>
+            Annuler
+          </button>
+          <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}>
+            <Icons.check size={15} /> Enregistrer
+          </button>
+        </div>
+      </div>
+    </Modal>
   )
 }

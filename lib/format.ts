@@ -26,6 +26,44 @@ export const initialsOf = (name: string): string =>
     .toUpperCase()
 
 /* ============================================================
+ * Dates « JJ/MM/AAAA » saisies à la main (contrats, échéances…).
+ * On raisonne en date locale (minuit) — pas d'heure ni de fuseau.
+ * ============================================================ */
+
+/** Parse une date "JJ/MM/AAAA" en Date (minuit local). Renvoie null si invalide. */
+export const parseFrDate = (s: string | null | undefined): Date | null => {
+  const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s || '')
+  if (!m) return null
+  const d = new Date(+m[3], +m[2] - 1, +m[1])
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Formate une Date en "JJ/MM/AAAA". */
+export const fmtFrDate = (d: Date): string =>
+  `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`
+
+/** "JJ/MM/AAAA" → "AAAA-MM-JJ" (valeur d'un <input type="date">). */
+export const frToInputDate = (s?: string | null): string => {
+  const d = parseFrDate(s)
+  return d ? fmtFrDate(d).split('/').reverse().join('-') : ''
+}
+
+/** "AAAA-MM-JJ" (<input type="date">) → "JJ/MM/AAAA". */
+export const inputToFrDate = (s?: string | null): string => {
+  const m = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(s || '')
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : ''
+}
+
+/** Vrai si l'échéance "JJ/MM/AAAA" est dépassée (strictement avant aujourd'hui). */
+export const isExpiredFrDate = (s: string | null | undefined): boolean => {
+  const d = parseFrDate(s)
+  if (!d) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return d.getTime() < today.getTime()
+}
+
+/* ============================================================
  * Fuseau horaire — on stocke l'instant en UTC (timestamptz) et on
  * AFFICHE TOUJOURS en Europe/Paris. `Intl` gère seul le passage
  * heure d'été / heure d'hiver, sans dépendance externe.
