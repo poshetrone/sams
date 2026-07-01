@@ -13,8 +13,8 @@ import type { Member, FormationRow } from '@/lib/types'
 
 export default function FormationsView({ members: initialMembers, formations }: { members: Member[]; formations: FormationRow[] }) {
   const router = useRouter()
-  const { search, isAdmin: isAdminGrade, canEdit } = useApp()
-  const isAdmin = isAdminGrade && canEdit('formations')
+  const { search, canEdit } = useApp()
+  const editable = canEdit('formations')
   const [members, setMembers] = useState(initialMembers)
   useEffect(() => setMembers(initialMembers), [initialMembers])
   const [modal, setModal] = useState<FormationRow | 'new' | null>(null)
@@ -25,7 +25,7 @@ export default function FormationsView({ members: initialMembers, formations }: 
     .sort((a, b) => (GRADES[b.grade as GradeKey]?.rank ?? 0) - (GRADES[a.grade as GradeKey]?.rank ?? 0))
 
   const toggle = (id: string, fk: string) => {
-    if (!isAdmin) return
+    if (!editable) return
     setMembers((prev) =>
       prev.map((m) => {
         if (m.id !== id) return m
@@ -44,15 +44,15 @@ export default function FormationsView({ members: initialMembers, formations }: 
         <div style={{ fontSize: 13.5, color: 'var(--ink-400)' }}>
           Cochez les formations validées par chaque membre · <b style={{ color: 'var(--ink-100)' }}>{total}</b> formations au catalogue
         </div>
-        {isAdmin && <button className="btn btn-gold" style={{ marginLeft: 'auto' }} onClick={() => setModal('new')}><Icons.plus size={16} /> Ajouter une formation</button>}
+        {editable && <button className="btn btn-gold" style={{ marginLeft: 'auto' }} onClick={() => setModal('new')}><Icons.plus size={16} /> Ajouter une formation</button>}
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         {formations.map((f) => {
           const I = Icons[f.icon] || Icons.medal
           return (
-            <span key={f.key} className="form-chip" onClick={isAdmin ? () => setModal(f) : undefined} style={{ cursor: isAdmin ? 'pointer' : 'default' }} title={isAdmin ? 'Modifier' : undefined}>
-              <I size={12} style={{ color: 'var(--gold-400)' }} /> {f.label}{isAdmin && <Icons.edit size={11} style={{ opacity: 0.5, marginLeft: 2 }} />}
+            <span key={f.key} className="form-chip" onClick={editable ? () => setModal(f) : undefined} style={{ cursor: editable ? 'pointer' : 'default' }} title={editable ? 'Modifier' : undefined}>
+              <I size={12} style={{ color: 'var(--gold-400)' }} /> {f.label}{editable && <Icons.edit size={11} style={{ opacity: 0.5, marginLeft: 2 }} />}
             </span>
           )
         })}
@@ -64,7 +64,7 @@ export default function FormationsView({ members: initialMembers, formations }: 
             <tr>
               <th style={{ position: 'sticky', left: 0, background: 'var(--navy-800)', zIndex: 2, minWidth: 220 }}>Employé</th>
               {formations.map((f) => (
-                <th key={f.key} style={{ textAlign: 'center', minWidth: 74, cursor: isAdmin ? 'pointer' : 'default' }} title={isAdmin ? `${f.label} — cliquer pour modifier` : f.label} onClick={isAdmin ? () => setModal(f) : undefined}>{f.short}</th>
+                <th key={f.key} style={{ textAlign: 'center', minWidth: 74, cursor: editable ? 'pointer' : 'default' }} title={editable ? `${f.label} — cliquer pour modifier` : f.label} onClick={editable ? () => setModal(f) : undefined}>{f.short}</th>
               ))}
               <th style={{ textAlign: 'center', minWidth: 90 }}>Progression</th>
             </tr>
@@ -91,7 +91,7 @@ export default function FormationsView({ members: initialMembers, formations }: 
                   {formations.map((f) => {
                     const on = fs.includes(f.key)
                     return (
-                      <td key={f.key} style={{ textAlign: 'center', cursor: isAdmin ? 'pointer' : 'default' }} onClick={isAdmin ? () => toggle(m.id, f.key) : undefined}>
+                      <td key={f.key} style={{ textAlign: 'center', cursor: editable ? 'pointer' : 'default' }} onClick={editable ? () => toggle(m.id, f.key) : undefined}>
                         <div className={`form-cell ${on ? 'on' : ''}`}>{on && <Icons.check size={15} />}</div>
                       </td>
                     )
