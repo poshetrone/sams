@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Icons } from '@/components/Icons'
 import { exportPng } from '@/lib/export-png'
 import { fmtMoney, fmtPhone } from '@/lib/format'
-import { STATUS_MAP, CARE_STATUS, MUTUELLES } from '@/lib/constants'
+import { STATUS_MAP, CARE_STATUS } from '@/lib/constants'
+import { useApp } from '@/lib/app-context'
 import type { Patient, Appointment, Invoice } from '@/lib/types'
 
 function useToast() {
@@ -133,7 +134,8 @@ export function DossierSummary({ patient, onClose }: { patient: Patient; onClose
 /* ---------- Carte facture ---------- */
 export function FactureCard({ patient, inv, onClose }: { patient: Patient; inv: Invoice; onClose: () => void }) {
   const { flash, node } = useToast()
-  const mut = inv.mutuelle ? MUTUELLES[inv.mutuelle as 'standard' | 'premium'] : null
+  const { mutuelleByKey } = useApp()
+  const mut = mutuelleByKey(inv.mutuelle)
   return (
     <div className="modal-overlay" onClick={onClose} style={{ alignItems: 'flex-start', overflowY: 'auto' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', margin: 'auto' }}>

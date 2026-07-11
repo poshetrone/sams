@@ -196,6 +196,47 @@ export interface FormationRow {
   ord: number
 }
 
+export interface PoleRow {
+  key: string
+  label: string
+  color: string
+  icon: string
+  /** Id du membre responsable du pôle (null si non défini). */
+  lead: string | null
+  ord: number
+}
+
+export interface MutuelleTier {
+  key: string
+  label: string
+  price: number
+}
+
+/** Formule de couverture (table `mutuelles`), référencée par les contrats. */
+export interface MutuelleRow {
+  key: string
+  label: string
+  desc: string | null
+  perks: string[]
+  tiers: MutuelleTier[]
+  /** Active le style « premium » (doré) côté interface. */
+  premium: boolean
+  ord: number
+}
+
+export interface PoleAppointment {
+  id: string
+  pole_key: string
+  member_id: string | null
+  author: string | null
+  title: string
+  /** Date "YYYY-MM-DD". */
+  day: string
+  /** Heure "HH:MM" (null si toute la journée). */
+  time: string | null
+  created_at?: string | null
+}
+
 export interface AuditEntry {
   id: string
   who: string | null

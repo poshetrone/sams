@@ -17,13 +17,18 @@ const todayKey = () => {
   const d = new Date()
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
+// Mois courant si on est bien sur l'année affichée, sinon janvier
+const currentMonth = () => {
+  const d = new Date()
+  return d.getFullYear() === YEAR ? d.getMonth() : 0
+}
 
 export default function CalendrierView({ events }: { events: CalendarEvent[] }) {
   const router = useRouter()
   const { canEdit } = useApp()
   const editable = canEdit('calendrier')
   useRealtime('calendar_events')
-  const [month, setMonth] = useState(5)
+  const [month, setMonth] = useState(currentMonth)
   const [open, setOpen] = useState<number | null>(null)
 
   const byDay = new Map<string, CalendarEvent[]>()
@@ -51,7 +56,7 @@ export default function CalendrierView({ events }: { events: CalendarEvent[] }) 
           <div className="icon-btn" onClick={() => setMonth((m) => (m + 11) % 12)}><Icons.arrowL size={16} /></div>
           <h2>{MONTHS_FR[month]} <span>{YEAR}</span></h2>
           <div className="icon-btn" onClick={() => setMonth((m) => (m + 1) % 12)} style={{ transform: 'scaleX(-1)' }}><Icons.arrowL size={16} /></div>
-          <button className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMonth(5)}>Aujourd&apos;hui</button>
+          <button className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMonth(currentMonth())}>Aujourd&apos;hui</button>
         </div>
         <div style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--ink-400)' }}><b style={{ color: 'var(--gold-300)' }}>{monthCount}</b> note(s) ce mois · partagé avec tout le service</div>
       </div>

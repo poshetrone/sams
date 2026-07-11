@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Icons } from '@/components/Icons'
 import { Badge, Card, SecTitle } from '@/components/ui'
 import { fmtMoney } from '@/lib/format'
-import { MUTUELLES } from '@/lib/constants'
 import { useApp } from '@/lib/app-context'
 import { FactureModal } from './modals'
 import { FactureCard } from './cards'
@@ -16,7 +15,7 @@ export default function PatientBilling({
   patient: Patient
   persist: (patch: PatientPatch) => void
 }) {
-  const { canEdit } = useApp()
+  const { canEdit, mutuelleByKey } = useApp()
   const editable = canEdit('patients')
   const [modal, setModal] = useState(false)
   const [card, setCard] = useState<Invoice | null>(null)
@@ -51,7 +50,7 @@ export default function PatientBilling({
           </p>
         )}
         {invoices.map((inv) => {
-          const mut = inv.mutuelle ? MUTUELLES[inv.mutuelle as 'standard' | 'premium'] : null
+          const mut = mutuelleByKey(inv.mutuelle)
           return (
             <div className="doc-row" key={inv.id}>
               <div className="dr-ico"><Icons.coin size={19} /></div>

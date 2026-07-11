@@ -194,6 +194,7 @@ export function ImagingModal({ onClose, onSave }: { onClose: () => void; onSave:
 
 /* ---------- Facture ---------- */
 export function FactureModal({ onClose, onSave }: { onClose: () => void; onSave: (inv: Invoice) => void }) {
+  const { mutuelles } = useApp()
   const [f, setF] = useState({ label: '', amount: '', mutuelle: '', status: 'à régler' })
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }))
   return (
@@ -204,7 +205,8 @@ export function FactureModal({ onClose, onSave }: { onClose: () => void; onSave:
           <div className="ep-field"><label>Montant ($)</label><input value={f.amount} onChange={(e) => set('amount', e.target.value.replace(/[^\d]/g, ''))} placeholder="12000" /></div>
           <div className="ep-field"><label>Mutuelle</label>
             <select value={f.mutuelle} onChange={(e) => set('mutuelle', e.target.value)}>
-              <option value="">Sans mutuelle</option><option value="standard">Mutuelle</option><option value="premium">Mutuelle Premium</option>
+              <option value="">Sans mutuelle</option>
+              {mutuelles.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select>
           </div>
         </div>

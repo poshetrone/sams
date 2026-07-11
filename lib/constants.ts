@@ -134,13 +134,17 @@ export const FORMATIONS: Formation[] = [
   { key: 'fusillade',   label: 'Formation Fusillade',           short: 'Fusillade',  icon: 'alert' },
 ]
 
-/* ---- Pôles ---- */
-export interface Pole { key: string; label: string; color: string; bg: string }
+/* ---- Pôles ----
+ * Les pôles sont désormais configurables et stockés en base (table `poles`,
+ * API /poles). Gérés depuis Effectifs → « Gérer les pôles » (Direction).
+ * Voir le type `PoleRow` dans lib/types.ts. */
 
-export const POLES: Pole[] = [
-  { key: 'chirurgie', label: 'Pôle Chirurgie',      color: '#7f9fe0', bg: 'rgba(127,159,224,0.14)' },
-  { key: 'kine',      label: 'Pôle Kinésithérapie', color: '#45b98a', bg: 'rgba(69,185,138,0.14)' },
-  { key: 'psy',       label: 'Pôle Psychologie',    color: '#a98fd6', bg: 'rgba(169,143,214,0.14)' },
+/** Sous-pages d'une section de pôle (sidebar). `key` vide = page racine (Équipe).
+ *  Route : `/poles/<poleKey>` puis `/poles/<poleKey>/<sub.key>`. */
+export interface PoleSubPage { key: string; label: string; icon: string }
+export const POLE_SUBPAGES: PoleSubPage[] = [
+  { key: '', label: 'Équipe', icon: 'effectifs' },
+  { key: 'planning', label: 'Planning', icon: 'calendar' },
 ]
 
 /* ---- Tarification ---- */
@@ -158,38 +162,11 @@ export const TARIFS: Tarif[] = [
   { icon: 'fusil',   label: 'Fusillade', price: 6000 },
 ]
 
-/* ---- Mutuelles ---- */
-export interface MutuelleTier { key: string; label: string; price: number }
-export interface MutuelleDef { label: string; desc: string; perks: string[]; tiers: MutuelleTier[] }
-
-export const MUTUELLES: Record<'standard' | 'premium', MutuelleDef> = {
-  standard: {
-    label: 'Mutuelle',
-    desc: 'Réanimation gratuite + déplacement gratuit compris en service',
-    perks: ['Réanimation gratuite', 'Déplacement gratuit en service'],
-    tiers: [
-      { key: 't1', label: '10 à 15 employés', price: 45000 },
-      { key: 't2', label: '15 à 20 employés', price: 50000 },
-      { key: 't3', label: '20 employés et +', price: 55000 },
-    ],
-  },
-  premium: {
-    label: 'Mutuelle Premium',
-    desc: 'Réanimation + soins + déplacement gratuit + imagerie médicale en service',
-    perks: ['Réanimation', 'Soins', 'Déplacement gratuit', 'Imagerie médicale en service'],
-    tiers: [
-      { key: 't1', label: '10 à 15 employés', price: 90000 },
-      { key: 't2', label: '15 à 20 employés', price: 110000 },
-      { key: 't3', label: '20 employés et +', price: 130000 },
-    ],
-  },
-}
-
-export const mutuellePrice = (type: 'standard' | 'premium', tier: string): number => {
-  const m = MUTUELLES[type]
-  const t = m && m.tiers.find((x) => x.key === tier)
-  return t ? t.price : 0
-}
+/* ---- Mutuelles ----
+ * Les formules de couverture sont désormais gérées en base (table `mutuelles`)
+ * et éditables depuis la page « Contrats & mutuelles ». Voir `MutuelleRow` dans
+ * `lib/types.ts` et les helpers `mutuelleByKey`/`mutuellePrice` du contexte
+ * applicatif (`lib/app-context.tsx`). */
 
 /* ---- Fusillades / triage ---- */
 export const TRIAGE: Record<string, { label: string; cls: string; color: string }> = {

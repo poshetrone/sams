@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Icons } from './Icons'
-import { NAV, GRADES, isAdminGrade } from '@/lib/constants'
+import { NAV, GRADES, isAdminGrade, POLE_SUBPAGES } from '@/lib/constants'
 import { useApp } from '@/lib/app-context'
 import { logout as logoutAction } from '@/lib/actions/auth'
 import { updateMyPhoto } from '@/lib/actions/profile'
@@ -13,7 +13,7 @@ import { compressImage } from '@/lib/image'
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { member, grade, setGrade, realGrade, access, reqCount } = useApp()
+  const { member, grade, setGrade, realGrade, access, reqCount, myPoles } = useApp()
   const [photo, setPhoto] = useState<string | null>(member.photo)
 
   const isActive = (route: string) =>
@@ -71,6 +71,29 @@ export default function Sidebar() {
                 )
               })}
           </div>
+          )
+        })}
+
+        {/* Une section par pôle du membre (masquée s'il n'en a aucun).
+            Chaque section = un en-tête (nom du pôle) + ses sous-pages. */}
+        {myPoles.map((p) => {
+          const PIcon = Icons[p.icon] || Icons.medal
+          return (
+            <div key={p.key}>
+              <div className="nav-group-label" style={{ display: 'flex', alignItems: 'center', gap: 6, color: p.color }} title={p.label}>
+                <PIcon size={13} /> {p.label}
+              </div>
+              {POLE_SUBPAGES.map((sub) => {
+                const route = `/poles/${p.key}${sub.key ? `/${sub.key}` : ''}`
+                const I = Icons[sub.icon] || Icons.doc
+                return (
+                  <Link key={sub.key || 'equipe'} href={route} className={`nav-item ${pathname === route ? 'active' : ''}`}>
+                    <span className="ico">{I ? <I size={18} /> : null}</span>
+                    {sub.label}
+                  </Link>
+                )
+              })}
+            </div>
           )
         })}
       </nav>

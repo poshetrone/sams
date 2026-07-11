@@ -7,11 +7,12 @@ import Modal from '@/components/Modal'
 import EmployeeModal from './EmployeeModal'
 import ContractEditor from './ContractEditor'
 import ContractCell from './ContractCell'
-import { GRADES, POLES, MEMBER_STATUS, absenceBadge, type GradeKey } from '@/lib/constants'
-import { fmtPhone, initialsOf } from '@/lib/format'
+import PolesManager from './PolesManager'
+import { GRADES, MEMBER_STATUS, absenceBadge, type GradeKey } from '@/lib/constants'
+import { fmtPhone, initialsOf, hexToRgba } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { deleteMember } from '@/lib/actions/members'
-import type { Member } from '@/lib/types'
+import type { Member, PoleRow } from '@/lib/types'
 
 function WarnCrosses({ n }: { n: number }) {
   const full = n >= 3
@@ -29,13 +30,14 @@ function WarnCrosses({ n }: { n: number }) {
   )
 }
 
-export default function EffectifsView({ members }: { members: Member[] }) {
+export default function EffectifsView({ members, poles }: { members: Member[]; poles: PoleRow[] }) {
   const router = useRouter()
-  const { can, search, canEdit } = useApp()
+  const { can, search, canEdit, isAdmin: isDirection } = useApp()
   const editable = canEdit('effectifs')
   const isAdmin = can('manageStaff') && editable
   const [modal, setModal] = useState<'new' | { employee: Member } | null>(null)
   const [contract, setContract] = useState(false)
+  const [polesModal, setPolesModal] = useState(false)
   const [confirmDel, setConfirmDel] = useState<Member | null>(null)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -69,6 +71,11 @@ export default function EffectifsView({ members }: { members: Member[] }) {
           <b style={{ color: 'var(--ink-100)' }}>{members.length}</b> employés enregistrés
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+          {isDirection && (
+            <button className="btn btn-ghost" onClick={() => setPolesModal(true)}>
+              <Icons.shield size={15} /> Gérer les pôles
+            </button>
+          )}
           {isAdmin && (
             <button className="btn btn-ghost" onClick={() => setContract(true)}>
               <Icons.doc size={15} /> Générer un contrat
@@ -126,9 +133,9 @@ export default function EffectifsView({ members }: { members: Member[] }) {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                       {(m.poles || []).length === 0 && <span style={{ color: 'var(--ink-500)', fontSize: 12 }}>—</span>}
                       {(m.poles || []).map((pk) => {
-                        const p = POLES.find((x) => x.key === pk)
+                        const p = poles.find((x) => x.key === pk)
                         return p ? (
-                          <span key={pk} className="grade" style={{ color: p.color, background: p.bg }}>
+                          <span key={pk} className="grade" style={{ color: p.color, background: hexToRgba(p.color) }}>
                             {p.label.replace('Pôle ', '')}
                           </span>
                         ) : null
@@ -180,9 +187,19 @@ export default function EffectifsView({ members }: { members: Member[] }) {
       {modal && (
         <EmployeeModal
           employee={modal === 'new' ? null : modal.employee}
+          poles={poles}
           editable={editable}
           onClose={() => setModal(null)}
           onSaved={() => router.refresh()}
+        />
+      )}
+
+      {polesModal && (
+        <PolesManager
+          poles={poles}
+          members={members}
+          onClose={() => setPolesModal(false)}
+          onChanged={() => router.refresh()}
         />
       )}
 

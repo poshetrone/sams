@@ -1,5 +1,14 @@
 /* ============ SAMS — Helpers de formatage (portés depuis data.js) ============ */
 
+/** Couleur hex (#rrggbb ou #rgb) → rgba() avec l'alpha donné. Fond translucide d'un badge. */
+export const hexToRgba = (hex: string, alpha = 0.14): string => {
+  let h = (hex || '').replace('#', '').trim()
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  const n = parseInt(h, 16)
+  if (h.length !== 6 || Number.isNaN(n)) return `rgba(127,159,224,${alpha})`
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
+}
+
 /** Format monétaire — ex : 65 000 $ (espaces insécables). */
 export const fmtMoney = (n: number | string | null | undefined): string => {
   const v = typeof n === 'number' ? n : Number(n || 0)

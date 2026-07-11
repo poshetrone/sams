@@ -2,11 +2,11 @@
 import { useState } from 'react'
 import Modal from '@/components/Modal'
 import { Icons } from '@/components/Icons'
-import { GRADES, POLES } from '@/lib/constants'
-import { fmtPhone, frToInputDate, inputToFrDate } from '@/lib/format'
+import { GRADES } from '@/lib/constants'
+import { fmtPhone, frToInputDate, inputToFrDate, hexToRgba } from '@/lib/format'
 import AbsenceFields from '@/components/absence/AbsenceFields'
 import { createMember, updateMember, type MemberInput } from '@/lib/actions/members'
-import type { Member } from '@/lib/types'
+import type { Member, PoleRow } from '@/lib/types'
 
 const STATUS_OPTS: [string, string][] = [
   ['service', 'En service'],
@@ -17,11 +17,13 @@ const STATUS_OPTS: [string, string][] = [
 
 export default function EmployeeModal({
   employee,
+  poles,
   editable = true,
   onClose,
   onSaved,
 }: {
   employee: Member | null
+  poles: PoleRow[]
   editable?: boolean
   onClose: () => void
   onSaved: () => void
@@ -160,10 +162,11 @@ export default function EmployeeModal({
             Pôles rattachés <span style={{ color: 'var(--ink-500)', fontWeight: 400 }}>(sélection multiple)</span>
           </label>
           <div className="chips">
-            {POLES.map((p) => {
+            {poles.length === 0 && <span style={{ color: 'var(--ink-500)', fontSize: 12 }}>Aucun pôle configuré.</span>}
+            {poles.map((p) => {
               const on = (f.poles || []).includes(p.key)
               return (
-                <div key={p.key} className={`chip ${on ? 'on' : ''}`} onClick={() => togglePole(p.key)} style={on ? { color: p.color, borderColor: p.color, background: p.bg } : undefined}>
+                <div key={p.key} className={`chip ${on ? 'on' : ''}`} onClick={() => togglePole(p.key)} style={on ? { color: p.color, borderColor: p.color, background: hexToRgba(p.color) } : undefined}>
                   {on && <Icons.check size={12} style={{ verticalAlign: -1, marginRight: 4 }} />}
                   {p.label}
                 </div>
