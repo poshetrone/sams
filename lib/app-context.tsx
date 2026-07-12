@@ -1,9 +1,9 @@
 'use client'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { GradeKey } from './constants'
-import { can, isAdminGrade, type PermAction } from './constants'
+import { GRADES, can, isAdminGrade, type PermAction } from './constants'
 import { getAccess, type AccessLevel, type PermMap } from './permissions'
-import type { PoleRow, MutuelleRow } from './types'
+import type { PoleRow, MutuelleRow, GradePrimeRow } from './types'
 
 export interface CurrentMember {
   id: string
@@ -42,6 +42,10 @@ interface AppContextValue {
   mutuelleByKey: (key: string | null | undefined) => MutuelleRow | null
   /** Prix hebdomadaire d'une formule pour une tranche donnée (0 si introuvable). */
   mutuellePrice: (key: string | null | undefined, tier: string) => number
+  /** Barème des primes par grade (table `grade_primes`). */
+  gradePrimes: GradePrimeRow[]
+  /** Montant de la prime d'un grade (valeur en base, fallback sur la constante statique). */
+  gradePrime: (grade: string | null | undefined) => number
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -52,6 +56,7 @@ export function AppProvider({
   perms,
   poles,
   mutuelles,
+  gradePrimes,
   children,
 }: {
   member: CurrentMember
@@ -59,6 +64,7 @@ export function AppProvider({
   perms: PermMap
   poles: PoleRow[]
   mutuelles: MutuelleRow[]
+  gradePrimes: GradePrimeRow[]
   children: ReactNode
 }) {
   const [grade, setGrade] = useState<string>(member.grade)
@@ -72,6 +78,12 @@ export function AppProvider({
     const m = mutuelleByKey(key)
     const t = m && m.tiers.find((x) => x.key === tier)
     return t ? t.price : 0
+  }
+  const gradePrime = (grade: string | null | undefined) => {
+    if (!grade) return 0
+    const row = gradePrimes.find((g) => g.key === grade)
+    if (row) return row.prime
+    return GRADES[grade as GradeKey]?.prime ?? 0
   }
 
   const value: AppContextValue = {
@@ -91,6 +103,8 @@ export function AppProvider({
     mutuelles,
     mutuelleByKey,
     mutuellePrice,
+    gradePrimes,
+    gradePrime,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

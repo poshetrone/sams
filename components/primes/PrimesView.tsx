@@ -8,17 +8,19 @@ import { GRADES, type GradeKey } from '@/lib/constants'
 import { fmtMoney, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { setPrime, setBonus, resetPrimes } from '@/lib/actions/members'
+import { setGradePrime } from '@/lib/actions/grade-primes'
 import type { Member } from '@/lib/types'
 
 export default function PrimesView({ members: initial }: { members: Member[] }) {
   const router = useRouter()
-  const { can, search, canEdit: canEditCat } = useApp()
+  const { can, search, canEdit: canEditCat, gradePrime } = useApp()
   const editable = canEditCat('primes')
   const canEdit = can('manageStaff') && editable
   const canReset = can('resetPrime') && editable
   const [members, setMembers] = useState(initial)
   useEffect(() => setMembers(initial), [initial])
   const [confirmReset, setConfirmReset] = useState(false)
+  const [editScale, setEditScale] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2400) }
 
@@ -38,7 +40,7 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
     setBonus(m.id, +m.bonus || 0).then((r) => { if (!r.ok) flash(r.error || 'Erreur') })
   }
 
-  const baseTotal = members.filter((m) => m.prime).reduce((s, m) => s + (GRADES[m.grade as GradeKey]?.prime ?? 0), 0)
+  const baseTotal = members.filter((m) => m.prime).reduce((s, m) => s + gradePrime(m.grade), 0)
   const bonusTotal = members.reduce((s, m) => s + (+m.bonus || 0), 0)
   const total = baseTotal + bonusTotal
   const beneficiaires = members.filter((m) => m.prime || (+m.bonus || 0) > 0).length
@@ -74,6 +76,9 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
         <SecTitle>Attribution des primes</SecTitle>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center', paddingBottom: 14 }}>
+          {canReset && (
+            <button className="btn btn-gold" onClick={() => setEditScale(true)}><Icons.edit size={15} /> Modifier le barème</button>
+          )}
           {canReset ? (
             <button className="btn-refuse" onClick={() => setConfirmReset(true)}><Icons.reset size={15} /> RESET PRIME</button>
           ) : (
@@ -89,8 +94,8 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
           <thead><tr><th style={{ width: 56 }}></th><th>Employé</th><th>Grade</th><th>Prime de grade</th><th>Prime bonus</th><th style={{ textAlign: 'right' }}>Total</th></tr></thead>
           <tbody>
             {list.map((m) => {
-              const g = GRADES[m.grade as GradeKey]
-              const rowTotal = (m.prime ? g?.prime ?? 0 : 0) + (+m.bonus || 0)
+              const base = gradePrime(m.grade)
+              const rowTotal = (m.prime ? base : 0) + (+m.bonus || 0)
               return (
                 <tr key={m.id}>
                   <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }}>
@@ -98,7 +103,7 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
                   </td>
                   <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default' }}><div className="person"><div className="av-sm">{initialsOf(m.name)}</div><div className="pn"><b>{m.name}</b><span>{m.matricule}</span></div></div></td>
                   <td><GradePill grade={m.grade} /></td>
-                  <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: m.prime ? 'var(--gold-300)' : 'var(--ink-500)' }}>{m.prime ? fmtMoney(g?.prime ?? 0) : '—'}</td>
+                  <td onClick={canEdit ? () => toggle(m) : undefined} style={{ cursor: canEdit ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: m.prime ? 'var(--gold-300)' : 'var(--ink-500)' }}>{m.prime ? fmtMoney(base) : '—'}</td>
                   <td>
                     <div className="bonus-input">
                       <span>$</span>
@@ -137,7 +142,76 @@ export default function PrimesView({ members: initial }: { members: Member[] }) 
         </Modal>
       )}
 
+      {editScale && (
+        <GradeScaleModal
+          gradePrime={gradePrime}
+          onClose={() => setEditScale(false)}
+          onSaved={(msg) => { setEditScale(false); router.refresh(); flash(msg) }}
+          onError={(msg) => flash(msg)}
+        />
+      )}
+
       {toast && <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: 'var(--navy-600)', border: '1px solid var(--gold-glow)', color: 'var(--gold-300)', padding: '12px 22px', borderRadius: 12, fontSize: 13.5, fontWeight: 600, zIndex: 90, boxShadow: 'var(--shadow-pop)' }}>{toast}</div>}
     </div>
+  )
+}
+
+/** Édition du barème des primes par grade (Direction). */
+function GradeScaleModal({
+  gradePrime,
+  onClose,
+  onSaved,
+  onError,
+}: {
+  gradePrime: (grade: string) => number
+  onClose: () => void
+  onSaved: (msg: string) => void
+  onError: (msg: string) => void
+}) {
+  // Grades du plus bas au plus haut rang.
+  const grades = (Object.keys(GRADES) as GradeKey[]).sort((a, b) => GRADES[a].rank - GRADES[b].rank)
+  const [values, setValues] = useState<Record<string, number>>(
+    () => Object.fromEntries(grades.map((k) => [k, gradePrime(k)]))
+  )
+  const [busy, setBusy] = useState(false)
+
+  const save = async () => {
+    setBusy(true)
+    // On ne persiste que les grades dont la prime a changé.
+    const changed = grades.filter((k) => (values[k] || 0) !== gradePrime(k))
+    if (!changed.length) { setBusy(false); onSaved('Aucune modification'); return }
+    for (const k of changed) {
+      const res = await setGradePrime(k, values[k] || 0)
+      if (!res.ok) { setBusy(false); onError(res.error || 'Erreur'); return }
+    }
+    setBusy(false)
+    onSaved(`Barème mis à jour — ${changed.length} grade${changed.length > 1 ? 's' : ''}`)
+  }
+
+  return (
+    <Modal onClose={onClose} title="Barème des primes par grade" icon={<Icons.cash size={20} />}>
+      <p style={{ color: 'var(--ink-400)', fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
+        Définissez le montant de la prime attribuée à chaque grade. La modification s&apos;applique immédiatement à tous les employés du grade concerné.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+        {grades.map((k) => (
+          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="grade" style={{ color: GRADES[k].color, background: GRADES[k].bg, minWidth: 150 }}>{GRADES[k].label}</span>
+            <div className="bonus-input" style={{ marginLeft: 'auto', maxWidth: 160 }}>
+              <span>$</span>
+              <input
+                value={(values[k] || 0) === 0 ? '' : Number(values[k]).toLocaleString('fr-FR')}
+                onChange={(e) => setValues((v) => ({ ...v, [k]: +e.target.value.replace(/\D/g, '') || 0 }))}
+                placeholder="0"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+        <button className="btn btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose} disabled={busy}>Annuler</button>
+        <button className="btn btn-gold" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={busy}><Icons.check size={15} /> Enregistrer</button>
+      </div>
+    </Modal>
   )
 }

@@ -206,6 +206,12 @@ export interface PoleRow {
   ord: number
 }
 
+/** Prime de grade éditable (table `grade_primes`). Référencée par sa clé de grade. */
+export interface GradePrimeRow {
+  key: string
+  prime: number
+}
+
 export interface MutuelleTier {
   key: string
   label: string

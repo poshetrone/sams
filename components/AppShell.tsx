@@ -2,7 +2,7 @@
 import { AppProvider, type CurrentMember } from '@/lib/app-context'
 import { NotificationsProvider } from '@/lib/notifications-context'
 import type { PermMap } from '@/lib/permissions'
-import type { PoleRow, MutuelleRow } from '@/lib/types'
+import type { PoleRow, MutuelleRow, GradePrimeRow } from '@/lib/types'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 
@@ -12,6 +12,7 @@ export default function AppShell({
   perms,
   poles,
   mutuelles,
+  gradePrimes,
   children,
 }: {
   member: CurrentMember
@@ -19,10 +20,11 @@ export default function AppShell({
   perms: PermMap
   poles: PoleRow[]
   mutuelles: MutuelleRow[]
+  gradePrimes: GradePrimeRow[]
   children: React.ReactNode
 }) {
   return (
-    <AppProvider member={member} reqCount={reqCount} perms={perms} poles={poles} mutuelles={mutuelles}>
+    <AppProvider member={member} reqCount={reqCount} perms={perms} poles={poles} mutuelles={mutuelles} gradePrimes={gradePrimes}>
       <NotificationsProvider>
         <div className="app">
           <Sidebar />
