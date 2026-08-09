@@ -91,6 +91,70 @@ export interface Patient {
   created_at?: string
 }
 
+/**
+ * Champs d'identité communs au dossier complet (`Patient`) et à la ligne de
+ * liste (`PatientListItem`) — l'en-tête des documents n'a besoin que de ceux-là.
+ */
+export interface PatientIdentity {
+  first_name: string
+  last_name: string
+  dob: string | null
+  blood: string
+  matricule: string | null
+}
+
+/** Métadonnées de pagination renvoyées par l'API (paginator Lucid). */
+export interface PageMeta {
+  total: number
+  perPage: number
+  currentPage: number
+  lastPage: number
+}
+
+/** Page de résultats : les lignes + leurs métadonnées. */
+export interface Page<T> {
+  items: T[]
+  meta: PageMeta
+}
+
+/**
+ * Ligne du tableau des patients — projection légère renvoyée par
+ * `GET /patients?page=…`. Volontairement dépourvue des colonnes JSON
+ * (imagerie, documents, historique…) : elles ne servent qu'au dossier détaillé
+ * et pèsent plusieurs Mo par patient.
+ */
+export interface PatientListItem {
+  id: string
+  first_name: string
+  last_name: string
+  dob: string | null
+  sex: 'M' | 'F' | string
+  blood: string
+  phone: string | null
+  matricule: string | null
+  status: string
+  care: string
+  last_visit: string | null
+  photo: string | null
+  /** Nombre de documents rattachés, compté en base. */
+  docs_count: number
+}
+
+/** Compteurs du registre patients (vue Statistiques), agrégés par l'API. */
+export interface PatientStats {
+  total: number
+  /** Nombre de documents par type (clés de `DOC_TYPES`). */
+  docs_by_type: Record<string, number>
+}
+
+/** Rendez-vous non honoré, avec l'identité du patient concerné. */
+export interface PatientReminder {
+  patient_id: string
+  first_name: string
+  last_name: string
+  appointment: Appointment
+}
+
 export interface Wounded {
   id: string; name: string; group?: string; age?: string; sex?: string
   phone?: string; triage: string; photo?: string | null; idCard?: string | null

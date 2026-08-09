@@ -4,7 +4,7 @@ import { Icons } from '@/components/Icons'
 import Editable from './Editable'
 import { DocContentContext, useDocField, type DocStore, type DocContentCtx } from './doc-content'
 import { PRESET_RADIOS } from '@/components/patients/modals'
-import type { Patient } from '@/lib/types'
+import type { PatientIdentity } from '@/lib/types'
 import type { CurrentMember } from '@/lib/app-context'
 
 const todayFR = () => {
@@ -65,7 +65,7 @@ function SignFoot({ user }: { user?: CurrentMember }) {
   )
 }
 
-function PaperShell({ type, patient, user, children }: { type: string; patient: Patient | null; user?: CurrentMember; children: React.ReactNode }) {
+function PaperShell({ type, patient, user, children }: { type: string; patient: PatientIdentity | null; user?: CurrentMember; children: React.ReactNode }) {
   const meta = DOC_META[type]
   const refId = useRef(refNum(meta.prefix)).current
   return (
@@ -508,7 +508,7 @@ export default function DocPaper({
   contentRef,
 }: {
   type: string
-  patient: Patient | null
+  patient: PatientIdentity | null
   user?: CurrentMember
   /** Contenu déjà sauvegardé pour ré-hydrater un document rattaché. */
   content?: DocStore

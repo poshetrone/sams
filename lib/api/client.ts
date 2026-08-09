@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import type { Page, PageMeta } from "@/lib/types";
 
 /**
  * Client API serveur — remplace les clients Supabase.
@@ -60,6 +61,45 @@ export async function apiGet<T = unknown>(path: string): Promise<T | null> {
   if (json && typeof json === "object" && "data" in json)
     return (json as { data: T }).data;
   return json as T;
+}
+
+/**
+ * Lecture paginée : déballe `{ data, metadata }`. Renvoie une page vide plutôt
+ * que `null` pour que l'appelant puisse rendre la vue sans cas particulier.
+ */
+export async function apiGetPage<T = unknown>(
+  path: string,
+  perPageFallback = 10,
+): Promise<Page<T>> {
+  const empty: Page<T> = {
+    items: [],
+    meta: { total: 0, perPage: perPageFallback, currentPage: 1, lastPage: 1 },
+  };
+
+  let res: Response;
+  try {
+    res = await request("GET", path);
+  } catch {
+    return empty;
+  }
+  if (!res.ok) return empty;
+
+  const json = (await res.json().catch(() => null)) as {
+    data?: T[];
+    metadata?: Partial<PageMeta>;
+  } | null;
+  if (!json || !Array.isArray(json.data)) return empty;
+
+  const m = json.metadata ?? {};
+  return {
+    items: json.data,
+    meta: {
+      total: Number(m.total ?? json.data.length),
+      perPage: Number(m.perPage ?? perPageFallback),
+      currentPage: Number(m.currentPage ?? 1),
+      lastPage: Math.max(1, Number(m.lastPage ?? 1)),
+    },
+  };
 }
 
 export interface MutationResult {

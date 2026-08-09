@@ -1,26 +1,23 @@
 import { Icons } from '@/components/Icons'
 import { Card, KPI } from '@/components/ui'
 import { GRADES, DOC_TYPES, type GradeKey } from '@/lib/constants'
-import type { Member, Patient } from '@/lib/types'
+import type { Member, PatientStats } from '@/lib/types'
 
-export default function StatsView({ members, patients }: { members: Member[]; patients: Patient[] }) {
+export default function StatsView({ members, patients }: { members: Member[]; patients: PatientStats }) {
   const byGrade = Object.entries(GRADES)
     .sort((a, b) => b[1].rank - a[1].rank)
     .map(([k, g]) => ({ ...g, key: k, count: members.filter((m) => m.grade === k).length }))
     .filter((g) => g.count > 0)
   const maxG = Math.max(...byGrade.map((g) => g.count), 1)
 
-  const docByType = DOC_TYPES.map((t) => ({
-    ...t,
-    count: patients.reduce((n, p) => n + (p.docs || []).filter((d) => d.type === t.key).length, 0),
-  }))
+  const docByType = DOC_TYPES.map((t) => ({ ...t, count: patients.docs_by_type[t.key] ?? 0 }))
   const maxD = Math.max(...docByType.map((d) => d.count), 1)
 
   return (
     <div className="view-anim">
       <div className="kpi-grid" style={{ marginBottom: 24 }}>
         <KPI label="Effectif total" val={members.length} icon="effectifs" />
-        <KPI label="Patients au registre" val={patients.length} icon="patients" />
+        <KPI label="Patients au registre" val={patients.total} icon="patients" />
         <KPI label="Documents au dossier" val={docByType.reduce((n, d) => n + d.count, 0)} icon="docs" />
         <KPI label="En service maintenant" val={members.filter((m) => m.status === 'service' || m.status === 'intervention').length} icon="pulse" />
       </div>

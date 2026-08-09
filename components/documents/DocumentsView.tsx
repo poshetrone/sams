@@ -8,7 +8,7 @@ import { useApp } from '@/lib/app-context'
 import { exportPng, capturePng } from '@/lib/export-png'
 import { attachPatientDoc, attachPatientImage, deletePatient } from '@/lib/actions/patients'
 import DocPaper, { DOC_META } from './DocPaper'
-import type { Patient } from '@/lib/types'
+import type { PatientListItem } from '@/lib/types'
 
 const todayFull = () => {
   const d = new Date()
@@ -22,7 +22,7 @@ export default function DocumentsView({
   initialType,
   death,
 }: {
-  patients: Patient[]
+  patients: PatientListItem[]
   initialPatientId?: string
   initialType?: string
   death?: boolean
@@ -31,7 +31,7 @@ export default function DocumentsView({
   const { member, can, canEdit } = useApp()
   const editable = canEdit('documents')
   const [type, setType] = useState<string | null>(initialType || null)
-  const [patient, setPatient] = useState<Patient | null>(patients.find((p) => p.id === initialPatientId) || null)
+  const [patient, setPatient] = useState<PatientListItem | null>(patients.find((p) => p.id === initialPatientId) || null)
   const [deathDone, setDeathDone] = useState(false)
   const contentRef = useRef<Record<string, unknown>>({})
   const [toast, setToast] = useState<string | null>(null)

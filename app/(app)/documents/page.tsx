@@ -1,8 +1,7 @@
-import { apiGet } from '@/lib/api/client'
 import { getServerAccess } from '@/lib/auth'
 import Restricted from '@/components/Restricted'
 import DocumentsView from '@/components/documents/DocumentsView'
-import type { Patient } from '@/lib/types'
+import { fetchPatientsLight } from '@/lib/actions/patients'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,10 +11,12 @@ export default async function DocumentsPage({
   searchParams: { patient?: string; type?: string; death?: string }
 }) {
   if ((await getServerAccess('documents')) === 'none') return <Restricted />
-  const data = await apiGet<Patient[]>('/patients')
+  // Seules l'identité et les constantes du dossier servent ici (sélecteur et
+  // en-tête du document) : l'annuaire léger suffit.
+  const patients = await fetchPatientsLight()
   return (
     <DocumentsView
-      patients={data ?? []}
+      patients={patients}
       initialPatientId={searchParams.patient}
       initialType={searchParams.type}
       death={searchParams.death === '1'}

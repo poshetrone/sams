@@ -1,9 +1,46 @@
 'use server'
 import { revalidatePath } from 'next/cache'
-import { apiPost, apiPut, apiPatch, apiDelete } from '@/lib/api/client'
-import type { PatientPatch, PatientDoc, PatientImage } from '@/lib/types'
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiGetPage } from '@/lib/api/client'
+import { PATIENTS_PAGE_SIZE } from '@/lib/constants'
+import type { Page, PatientPatch, PatientDoc, PatientImage, PatientListItem } from '@/lib/types'
 
 type Result = { ok: boolean; error?: string; id?: string }
+
+interface PatientsQuery {
+  page?: number
+  /** Recherche « prénom nom matricule ». */
+  q?: string
+  /** Statut à filtrer ; `tous` (ou vide) = pas de filtre. */
+  status?: string
+}
+
+/**
+ * Charge une page du tableau des patients. La pagination, le filtre statut et
+ * la recherche sont exécutés par l'API : seules les lignes affichées transitent.
+ */
+export async function fetchPatientsPage({
+  page = 1,
+  q = '',
+  status = 'tous',
+}: PatientsQuery = {}): Promise<Page<PatientListItem>> {
+  const params = new URLSearchParams({
+    page: String(Math.max(1, Math.trunc(page) || 1)),
+    per_page: String(PATIENTS_PAGE_SIZE),
+  })
+  if (q.trim()) params.set('q', q.trim())
+  if (status && status !== 'tous') params.set('status', status)
+
+  return apiGetPage<PatientListItem>(`/patients?${params}`, PATIENTS_PAGE_SIZE)
+}
+
+/**
+ * Annuaire complet des patients en projection légère — pour les vues qui ont
+ * besoin de tous les dossiers d'un coup (sélecteur de document, rattachement
+ * d'un blessé) sans les colonnes JSON.
+ */
+export async function fetchPatientsLight(): Promise<PatientListItem[]> {
+  return (await apiGet<PatientListItem[]>('/patients?view=list')) ?? []
+}
 
 /** Ajoute (prepend) un document au dossier patient. */
 export async function attachPatientDoc(patientId: string, entry: PatientDoc): Promise<Result> {

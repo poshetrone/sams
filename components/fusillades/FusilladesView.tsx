@@ -11,7 +11,7 @@ import { createFusillade, updateFusillade, createPatientFromWounded, deleteFusil
 import { handleImageUpload } from '@/lib/image'
 import { useRealtime } from '@/lib/useRealtime'
 import { recentOwnFusillades } from '@/lib/notifications-context'
-import type { Fusillade, Wounded, Patient } from '@/lib/types'
+import type { Fusillade, Wounded, PatientListItem } from '@/lib/types'
 
 /* Carte GTA */
 function GtaMap({ marker, onPick, max = 560 }: { marker?: { x: number | null; y: number | null }; onPick?: (p: { x: number; y: number }) => void; max?: number }) {
@@ -35,7 +35,7 @@ function GtaMap({ marker, onPick, max = 560 }: { marker?: { x: number | null; y:
   )
 }
 
-export default function FusilladesView({ fusillades: initial, patients }: { fusillades: Fusillade[]; patients: Patient[] }) {
+export default function FusilladesView({ fusillades: initial, patients }: { fusillades: Fusillade[]; patients: PatientListItem[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { search, isAdmin, canEdit } = useApp()
@@ -153,7 +153,7 @@ export default function FusilladesView({ fusillades: initial, patients }: { fusi
 
 function FusilladeDetail({ fus, patients, isAdmin, editable, onBack, onUpdate, onDelete, onCreatePatient, onOpenPatient }: {
   fus: Fusillade
-  patients: Patient[]
+  patients: PatientListItem[]
   isAdmin: boolean
   editable: boolean
   onBack: () => void
@@ -294,7 +294,7 @@ function NewFusilladeModal({ onClose, onSaved }: { onClose: () => void; onSaved:
   )
 }
 
-function WoundedModal({ patients, onClose, onSave }: { patients: Patient[]; onClose: () => void; onSave: (w: Wounded) => void }) {
+function WoundedModal({ patients, onClose, onSave }: { patients: PatientListItem[]; onClose: () => void; onSave: (w: Wounded) => void }) {
   const [f, setF] = useState<Wounded>({ id: '', name: '', group: '', age: '', sex: 'M', phone: '', triage: 'urgent', photo: null, idCard: null, info: '', patientId: undefined })
   const [showSug, setShowSug] = useState(true)
   const set = (k: keyof Wounded, v: unknown) => setF((prev) => ({ ...prev, [k]: v }))
@@ -302,7 +302,7 @@ function WoundedModal({ patients, onClose, onSave }: { patients: Patient[]; onCl
     handleImageUpload(file, 'fusillades', (url) => set(k, url))
   }
   const matches = f.name.trim().length >= 2 && !f.patientId ? patients.filter((p) => `${p.first_name} ${p.last_name}`.toLowerCase().includes(f.name.toLowerCase())).slice(0, 6) : []
-  const pick = (p: Patient) => { setF((prev) => ({ ...prev, name: `${p.first_name} ${p.last_name}`, sex: p.sex, phone: p.phone || '', photo: p.photo || prev.photo, patientId: p.id })); setShowSug(false) }
+  const pick = (p: PatientListItem) => { setF((prev) => ({ ...prev, name: `${p.first_name} ${p.last_name}`, sex: p.sex, phone: p.phone || '', photo: p.photo || prev.photo, patientId: p.id })); setShowSug(false) }
   const save = () => { if (!f.name.trim()) return; onSave({ ...f, id: 'w' + Date.now() }); onClose() }
 
   return (

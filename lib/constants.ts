@@ -65,6 +65,9 @@ export const STATUS_MAP: Record<string, StatusDef> = {
   deces:    { label: 'Décédé',   cls: 'crit' },
 }
 
+/** Taille de page du tableau des patients (pagination servie par l'API). */
+export const PATIENTS_PAGE_SIZE = 10
+
 export const MEMBER_STATUS: Record<string, StatusDef> = {
   service:      { label: 'En service',   cls: 'ok' },
   intervention: { label: 'Intervention', cls: 'warn' },
