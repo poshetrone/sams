@@ -202,6 +202,38 @@ export interface Timeclock {
   created_at?: string
 }
 
+export interface AcademyChapter {
+  key: string
+  title: string
+  text: string
+  items: string[]
+}
+
+export interface AcademyFormation {
+  id: string
+  ord: number
+  eyebrow: string | null
+  title: string
+  subtitle: string | null
+  chapters: AcademyChapter[]
+  /** Mise en situation : question ouverte posée au stagiaire. */
+  question: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface AcademyAnswer {
+  id: string
+  formation_id: string
+  member_id: string | null
+  name: string | null
+  grade: string | null
+  answer: string | null
+  completed: boolean
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export interface Tombola {
   id: number
   size: number

@@ -190,6 +190,7 @@ export const NAV: NavGroup[] = [
   { group: 'Pilotage', items: [
     { key: 'dashboard',  label: 'Tableau de bord', icon: 'dashboard', route: '/dashboard' },
     { key: 'calendrier', label: 'Calendrier',      icon: 'calendar',  route: '/calendrier' },
+    { key: 'academy',    label: 'SAMS Academy',    icon: 'medal',     route: '/academy' },
     { key: 'absence',    label: 'Mon absence',     icon: 'calendar',  route: '/mon-absence' },
   ]},
   { group: 'Médical', items: [
@@ -218,6 +219,7 @@ export const NAV: NavGroup[] = [
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard:    { title: 'Tableau de bord', sub: "Vue d'ensemble du service médical" },
   calendrier:   { title: 'Calendrier 2026', sub: 'Agenda partagé du service — tout le monde peut écrire' },
+  academy:      { title: 'SAMS Academy', sub: 'Parcours de formation EMS — contenu et réponses des stagiaires' },
   absence:      { title: 'Mon absence', sub: 'Déclarez votre indisponibilité — visible dans le suivi de pointage' },
   patients:     { title: 'Dossiers patients', sub: 'Gestion des fiches et antécédents' },
   documents:    { title: 'Documents médicaux', sub: 'Générer, éditer et archiver les pièces officielles' },

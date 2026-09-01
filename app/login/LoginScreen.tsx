@@ -62,6 +62,12 @@ export default function LoginScreen() {
           {error && (
             <div style={{ color: 'var(--crit)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</div>
           )}
+          <div className="divider">
+            <span className="l"></span>se former<span className="l"></span>
+          </div>
+          <a className="btn-recruit" href="/academy" style={{ textDecoration: 'none', textAlign: 'center' }}>
+            SAMS Academy — parcours de formation
+          </a>
           <div className="login-foot">
             En vous connectant, vous acceptez le règlement intérieur du SAMS.
             <br />
