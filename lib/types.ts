@@ -155,26 +155,6 @@ export interface PatientReminder {
   appointment: Appointment
 }
 
-export interface Wounded {
-  id: string; name: string; group?: string; age?: string; sex?: string
-  phone?: string; triage: string; photo?: string | null; idCard?: string | null
-  info?: string; patientId?: string
-}
-
-export interface Fusillade {
-  id: string
-  title: string
-  zone: string | null
-  x: number | null
-  y: number | null
-  severity: string
-  status: string
-  time: string | null
-  author: string | null
-  wounded: Wounded[]
-  created_at?: string
-}
-
 export interface CalendarEvent {
   id: string
   day: string // YYYY-MM-DD
@@ -219,17 +199,6 @@ export interface Timeclock {
   start: string | null
   end: string | null
   minutes: number
-  created_at?: string
-}
-
-export interface TrombiPost {
-  id: string
-  author: string | null
-  grade: string | null
-  photo: string | null
-  text: string | null
-  likers: string[]
-  time: string | null
   created_at?: string
 }
 

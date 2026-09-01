@@ -668,20 +668,7 @@ body {
 .cc-details { font-size: 12.5px; color: var(--ink-400); line-height: 1.6; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 16px; }
 .cc-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--navy-line-soft); }
 
-/* ---------- Fusillades / carte GTA ---------- */
-.gta-map { position: relative; width: 100%; aspect-ratio: 1; border-radius: 14px; overflow: hidden; border: 1px solid var(--navy-line); box-shadow: var(--shadow-card); background: var(--navy-900); }
-.gta-map.pick { cursor: crosshair; }
-.gta-map img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.map-marker { position: absolute; transform: translate(-50%, -50%); pointer-events: none; width: 0; height: 0; }
-.map-marker .mm-dot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; background: #e85c52; border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(232,92,82,0.45), 0 2px 8px rgba(0,0,0,0.6); }
-.map-marker .mm-ring { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e85c52; animation: ping 1.8s ease-out infinite; }
-.fus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
-.fus-card { display: flex; flex-direction: column; cursor: pointer; overflow: hidden; }
-.fus-map-mini { position: relative; height: 150px; overflow: hidden; border-bottom: 1px solid var(--navy-line-soft); }
-.fus-map-mini img { width: 100%; height: 100%; object-fit: cover; }
-.wounded-card { display: flex; gap: 14px; padding: 16px; }
-.wounded-photo { width: 56px; height: 56px; border-radius: 10px; flex: 0 0 56px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--navy-500), var(--navy-700)); border: 1px solid var(--navy-line); color: var(--gold-400); }
-.wounded-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* ---------- Pièce d'identité (modal patient) ---------- */
 .idcard-slot { border: 1px dashed var(--navy-line); border-radius: 10px; overflow: hidden; }
 .idcard-slot > img { width: 100%; max-height: 130px; object-fit: cover; display: block; }
 .idcard-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 18px; color: var(--ink-500); font-size: 12px; }
@@ -784,41 +771,6 @@ body {
 .sf-avatar-edit { position: absolute; left: 0; right: 0; bottom: 0; height: 13px; background: rgba(7,17,29,0.85); display: flex; align-items: center; justify-content: center; color: var(--gold-300); opacity: 0; transition: opacity .14s; }
 .sf-avatar:hover .sf-avatar-edit { opacity: 1; }
 
-/* ---------- Trombinoscope (mur / chat) ---------- */
-.trombi { display: flex; flex-direction: column; height: calc(100vh - var(--topbar-h) - 56px); }
-.tb-wall { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 8px 8px 18px; }
-.tb-msg { display: flex; gap: 12px; max-width: 72%; }
-.tb-msg.me { flex-direction: row-reverse; align-self: flex-end; }
-.tb-av { width: 44px; height: 44px; border-radius: 50%; flex: 0 0 44px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--gold-300); background: linear-gradient(135deg, var(--navy-500), var(--navy-700)); border: 1px solid var(--gold-glow); box-shadow: 0 0 14px -5px rgba(201,163,90,0.5); }
-.tb-av img { width: 100%; height: 100%; object-fit: cover; }
-.tb-bubble-wrap { min-width: 0; }
-.tb-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
-.tb-msg.me .tb-meta { flex-direction: row-reverse; }
-.tb-meta b { color: var(--ink-100); font-weight: 600; font-size: 13px; }
-.tb-grade { font-weight: 600; }
-.tb-time { color: var(--ink-500); }
-.tb-bubble { position: relative; background: linear-gradient(180deg, rgba(18,42,68,0.6), rgba(13,29,48,0.7)); border: 1px solid rgba(90,160,214,0.3); border-radius: 4px 14px 14px 14px; padding: 11px 14px; box-shadow: 0 0 18px -10px rgba(90,160,214,0.6); }
-.tb-msg.me .tb-bubble { border-color: var(--gold-glow); border-radius: 14px 4px 14px 14px; background: linear-gradient(180deg, rgba(201,163,90,0.16), rgba(201,163,90,0.05)); box-shadow: 0 0 18px -10px rgba(221,189,120,0.7); }
-.tb-bubble p { font-size: 13.5px; color: var(--ink-100); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-.tb-shot { display: block; max-width: 240px; width: 100%; border-radius: 9px; margin-top: 8px; border: 1px solid var(--navy-line-soft); }
-.tb-del { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--ink-400); cursor: pointer; opacity: 0; transition: opacity .14s, color .14s, background .14s; }
-.tb-bubble:hover .tb-del { opacity: 1; }
-.tb-del:hover { background: var(--crit-bg); color: var(--crit); }
-.tb-composer { flex: 0 0 auto; border-top: 1px solid var(--navy-line-soft); padding-top: 14px; }
-.tb-preview { position: relative; width: 90px; height: 90px; margin-bottom: 10px; border-radius: 10px; overflow: hidden; border: 1px solid var(--gold-glow); }
-.tb-preview img { width: 100%; height: 100%; object-fit: cover; }
-.tb-preview-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(7,17,29,0.85); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.tb-inputrow { display: flex; align-items: center; gap: 10px; }
-.tb-iconbtn { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 10px; border: 1px solid var(--navy-line-soft); background: var(--navy-800); display: flex; align-items: center; justify-content: center; color: var(--ink-300); cursor: pointer; transition: all .14s; }
-.tb-iconbtn:hover { border-color: rgba(90,160,214,0.6); color: #9fcdf0; box-shadow: 0 0 16px -5px rgba(90,160,214,0.7); }
-.tb-input { flex: 1; background: var(--navy-800); border: 1px solid var(--navy-line-soft); border-radius: 10px; padding: 13px 16px; color: var(--ink-100); font-family: var(--font-ui); font-size: 14px; outline: none; transition: border-color .14s, box-shadow .14s; }
-.tb-input:focus { border-color: var(--gold-glow); box-shadow: 0 0 18px -6px rgba(201,163,90,0.6); }
-.tb-like { display: inline-flex; align-items: center; justify-content: center; gap: 5px; margin-top: 6px; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--navy-line-soft); background: var(--navy-800); color: var(--ink-400); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .14s; width: fit-content; line-height: 1; }
-.tb-like svg { display: block; flex: 0 0 auto; width: 14px; height: 14px; overflow: visible; }
-.tb-msg.me .tb-like { margin-left: auto; }
-.tb-like:hover { border-color: rgba(232,92,82,0.5); color: #e8918a; }
-.tb-like.on { border-color: rgba(232,92,82,0.6); color: #ff6b61; background: rgba(232,92,82,0.12); box-shadow: 0 0 14px -5px rgba(232,92,82,0.8); }
-.tb-like.on svg { fill: #ff6b61; }
 .rdv-card { width: 600px; height: 340px; background: #fbf9f4; color: #1a2330; position: relative; overflow: hidden; box-shadow: 0 30px 70px -20px rgba(0,0,0,0.7); font-family: 'Archivo', sans-serif; }
 .rdv-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0d2236 0%, #16304b 45%, #0d2236 100%); }
 .rdv-wm { position: absolute; right: -40px; bottom: -40px; width: 260px; opacity: 0.06; }
@@ -1130,12 +1082,6 @@ body {
 .notif-item .ni-b span { color: var(--ink-400); font-size: 11.5px; }
 .notif-item .ni-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--crit); flex: 0 0 8px; box-shadow: 0 0 8px rgba(232,92,82,0.85); }
 .notif-empty { padding: 28px 16px; text-align: center; color: var(--ink-500); font-size: 13px; }
-
-/* Suppression d'une fusillade (carte liste) — révélée au survol */
-.fus-card { position: relative; }
-.fus-del { position: absolute; top: 8px; right: 8px; z-index: 3; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(7,17,29,0.72); color: var(--ink-300); border: 1px solid var(--navy-line-soft); cursor: pointer; opacity: 0; transition: opacity .14s, color .14s, border-color .14s, box-shadow .14s; }
-.fus-card:hover .fus-del { opacity: 1; }
-.fus-del:hover { color: var(--crit); border-color: rgba(232,92,82,0.6); box-shadow: 0 0 14px -4px rgba(232,92,82,0.85); }
 
 /* ============ Aide & guide ============ */
 .help-doc { max-width: 860px; margin-inline: auto; }

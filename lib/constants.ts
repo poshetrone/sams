@@ -175,26 +175,6 @@ export const TARIFS: Tarif[] = [
  * `lib/types.ts` et les helpers `mutuelleByKey`/`mutuellePrice` du contexte
  * applicatif (`lib/app-context.tsx`). */
 
-/* ---- Fusillades / triage ---- */
-export const TRIAGE: Record<string, { label: string; cls: string; color: string }> = {
-  urgent: { label: 'Urgence absolue',  cls: 'crit', color: '#e85c52' },
-  grave:  { label: 'Urgence relative', cls: 'warn', color: '#e3a83f' },
-  leger:  { label: 'Blessé léger',     cls: 'ok',   color: '#45b98a' },
-  deces:  { label: 'Décédé',           cls: 'crit', color: '#7286a0' },
-}
-
-export const SEVERITY: Record<string, { cls: string }> = {
-  'légère':   { cls: 'ok' },
-  'modérée':  { cls: 'warn' },
-  'critique': { cls: 'crit' },
-}
-
-export const GTA_ZONES = [
-  'Downtown', 'Vinewood', 'Del Perro', 'Vespucci Beach', 'Rockford Hills', 'Mirror Park',
-  'Strawberry', 'Davis', 'La Mesa', 'Sandy Shores', 'Paleto Bay', 'Grapeseed',
-  'Harmony', 'Chumash', 'Pacific Bluffs', 'Little Seoul',
-]
-
 /* ---- Calendrier ---- */
 export const MONTHS_FR = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -210,13 +190,11 @@ export const NAV: NavGroup[] = [
   { group: 'Pilotage', items: [
     { key: 'dashboard',  label: 'Tableau de bord', icon: 'dashboard', route: '/dashboard' },
     { key: 'calendrier', label: 'Calendrier',      icon: 'calendar',  route: '/calendrier' },
-    { key: 'trombi',     label: 'Trombinoscope',   icon: 'patients',  route: '/trombinoscope' },
     { key: 'absence',    label: 'Mon absence',     icon: 'calendar',  route: '/mon-absence' },
   ]},
   { group: 'Médical', items: [
     { key: 'patients',     label: 'Dossiers patients',   icon: 'patients',  route: '/patients' },
     { key: 'documents',    label: 'Documents',           icon: 'docs',      route: '/documents' },
-    { key: 'fusillade',    label: 'Fusillades',          icon: 'target',    route: '/fusillades' },
     { key: 'contrats',     label: 'Contrats & mutuelles', icon: 'briefcase', route: '/contrats' },
     { key: 'tarification', label: 'Tarification',        icon: 'cash',      route: '/tarification' },
   ]},
@@ -240,11 +218,9 @@ export const NAV: NavGroup[] = [
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard:    { title: 'Tableau de bord', sub: "Vue d'ensemble du service médical" },
   calendrier:   { title: 'Calendrier 2026', sub: 'Agenda partagé du service — tout le monde peut écrire' },
-  trombi:       { title: 'Trombinoscope', sub: 'Mur du service — partagez votre photo et discutez' },
   absence:      { title: 'Mon absence', sub: 'Déclarez votre indisponibilité — visible dans le suivi de pointage' },
   patients:     { title: 'Dossiers patients', sub: 'Gestion des fiches et antécédents' },
   documents:    { title: 'Documents médicaux', sub: 'Générer, éditer et archiver les pièces officielles' },
-  fusillade:    { title: 'Fusillades & interventions', sub: 'Cartographie des interventions et triage des blessés' },
   contrats:     { title: 'Contrats & mutuelles', sub: 'Entreprises partenaires et formules de couverture' },
   tarification: { title: 'Tarification', sub: 'Fiche de prix des prestations du service' },
   access:       { title: 'Gestion des accès', sub: 'Validation Discord & permissions du personnel' },
