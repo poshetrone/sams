@@ -13,6 +13,7 @@ import {
   answerFormation,
   deleteAnswer,
 } from '@/lib/actions/academy'
+import FormationReader from './FormationReader'
 import type { AcademyAnswer, AcademyChapter, AcademyFormation } from '@/lib/types'
 
 type Tab = 'parcours' | 'formations' | 'reponses'
@@ -315,32 +316,7 @@ function ParcoursTab({
         >
           {current.title}
         </SecTitle>
-        {current.subtitle && (
-          <div style={{ color: 'var(--ink-400)', fontStyle: 'italic', margin: '-8px 0 16px' }}>{current.subtitle}</div>
-        )}
-
-        <div style={{ display: 'grid', gap: 14 }}>
-          {current.chapters.map((c, i) => (
-            <Card key={c.key}>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', marginBottom: 8 }}>
-                <span style={{ color: 'var(--gold-400)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink-100)' }}>{c.title}</h4>
-              </div>
-              {c.text && <p style={{ color: 'var(--ink-300)', fontSize: 13.5, lineHeight: 1.7 }}>{c.text}</p>}
-              {c.items.length > 0 && (
-                <ul style={{ listStyle: 'none', display: 'grid', gap: 6, marginTop: c.text ? 10 : 0 }}>
-                  {c.items.map((it, k) => (
-                    <li key={k} style={{ color: 'var(--ink-300)', fontSize: 13.5, display: 'flex', gap: 9 }}>
-                      <span style={{ color: 'var(--gold-400)' }}>◆</span> {it}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          ))}
-        </div>
+        <FormationReader formation={current} />
 
         <Card style={{ marginTop: 18, background: 'var(--navy-800)' }}>
           <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 1, color: 'var(--gold-300)', marginBottom: 8 }}>

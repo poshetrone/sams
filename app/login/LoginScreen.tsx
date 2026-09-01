@@ -65,7 +65,7 @@ export default function LoginScreen() {
           <div className="divider">
             <span className="l"></span>se former<span className="l"></span>
           </div>
-          <a className="btn-recruit" href="/academy" style={{ textDecoration: 'none', textAlign: 'center' }}>
+          <a className="btn-recruit" href="/parcours" style={{ textDecoration: 'none', textAlign: 'center' }}>
             SAMS Academy — parcours de formation
           </a>
           <div className="login-foot">

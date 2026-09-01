@@ -10,7 +10,12 @@ const TOKEN_COOKIE = 'sams_token'
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const isPublic =
-    path.startsWith('/login') || path.startsWith('/auth') || path.startsWith('/pending')
+    path.startsWith('/login') ||
+    path.startsWith('/auth') ||
+    path.startsWith('/pending') ||
+    // Parcours Academy en accès libre : une recrue se forme avant ses accès.
+    path === '/parcours' ||
+    path.startsWith('/parcours/')
 
   const token = request.cookies.get(TOKEN_COOKIE)?.value
   if (!token && !isPublic) {
