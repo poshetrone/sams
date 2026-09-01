@@ -68,6 +68,10 @@ export const STATUS_MAP: Record<string, StatusDef> = {
 /** Taille de page du tableau des patients (pagination servie par l'API). */
 export const PATIENTS_PAGE_SIZE = 10
 
+/** Taille de page de l'historique des services (pagination côté client :
+    /timeclock renvoie tout l'historique en une fois). */
+export const TIMECLOCK_PAGE_SIZE = 15
+
 export const MEMBER_STATUS: Record<string, StatusDef> = {
   service:      { label: 'En service',   cls: 'ok' },
   intervention: { label: 'Intervention', cls: 'warn' },

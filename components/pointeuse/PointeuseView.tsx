@@ -7,6 +7,7 @@ import Modal from '@/components/Modal'
 import { initialsOf, parisDate, parisHM, parisWallToInstant, parisWeekRange } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { startShift, endShift, updateTime, deleteTime } from '@/lib/actions/timeclock'
+import { TIMECLOCK_PAGE_SIZE } from '@/lib/constants'
 import type { Timeclock } from '@/lib/types'
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
@@ -69,6 +70,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
   const isAdmin = isAdminGrade && editable
   const [, setTick] = useState(0)
   const [editRow, setEditRow] = useState<Timeclock | null>(null)
+  const [page, setPage] = useState(1)
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     const iv = setInterval(() => setTick((t) => t + 1), 30000)
@@ -89,10 +91,16 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
   const week = parisWeekRange(Date.now())
   const weekRows = weekTotals(timeclock, week.start.getTime(), week.end.getTime())
   const weekTotal = weekRows.reduce((s, r) => s + r.minutes, 0)
+  const weekLabel = `${parisDate(week.start)} → ${parisDate(week.end.getTime() - 86400000)}`
   const myWeekMin = timeclock
     .filter((t) => t.member_id === member.id && startMs(t) >= week.start.getTime() && startMs(t) < week.end.getTime())
     .reduce((s, t) => s + minutesOf(t), 0)
-  const weekLabel = `${parisDate(week.start)} → ${parisDate(week.end.getTime() - 86400000)}`
+
+  // La page est bornée à la volée : une suppression peut vider la dernière page.
+  const pageCount = Math.max(1, Math.ceil(sorted.length / TIMECLOCK_PAGE_SIZE))
+  const curPage = Math.min(page, pageCount)
+  const from = (curPage - 1) * TIMECLOCK_PAGE_SIZE
+  const pageRows = sorted.slice(from, from + TIMECLOCK_PAGE_SIZE)
 
   const start = async () => { setBusy(true); await startShift(); setBusy(false); router.refresh() }
   const end = async () => { if (!myOpen) return; setBusy(true); await endShift(myOpen.id); setBusy(false); router.refresh() }
@@ -129,7 +137,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
       <Card style={{ overflowX: 'auto', marginBottom: 24 }}>
         <table className="tbl" style={{ minWidth: 560 }}>
           <thead>
-            <tr><th>Employé</th><th>Grade</th><th style={{ textAlign: 'right' }}>Services</th><th style={{ textAlign: 'right' }}>Total semaine</th></tr>
+            <tr><th>Employé</th><th>Grade</th><th>Statut</th><th style={{ textAlign: 'right' }}>Services</th><th style={{ textAlign: 'right' }}>Total semaine</th></tr>
           </thead>
           <tbody>
             {weekRows.map((r) => (
@@ -137,15 +145,20 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
                 <td>
                   <div className="person">
                     <div className="av-sm">{initialsOf(r.name)}</div>
-                    <div className="pn"><b>{r.name}</b>{r.open && <span>service en cours</span>}</div>
+                    <div className="pn"><b>{r.name}</b></div>
                   </div>
                 </td>
                 <td><GradePill grade={r.grade} /></td>
+                <td>
+                  {r.open
+                    ? <span className="badge ok" style={{ padding: '2px 8px' }}><span className="b-dot"></span> en service</span>
+                    : <span style={{ color: 'var(--ink-500)' }}>—</span>}
+                </td>
                 <td style={{ textAlign: 'right', color: 'var(--ink-300)' }}>{r.shifts}</td>
                 <td style={{ textAlign: 'right', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--gold-300)' }}>{fmtDur(r.minutes)}</td>
               </tr>
             ))}
-            {weekRows.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>Aucun service cette semaine.</td></tr>}
+            {weekRows.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>Aucun service cette semaine.</td></tr>}
           </tbody>
         </table>
       </Card>
@@ -157,7 +170,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
             <tr><th>Employé</th><th>Grade</th><th>Jour</th><th>Début</th><th>Fin</th><th>Durée</th>{isAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}</tr>
           </thead>
           <tbody>
-            {sorted.map((t) => (
+            {pageRows.map((t) => (
               <tr key={t.id}>
                 <td><div className="person"><div className="av-sm">{initialsOf(t.name || '')}</div><div className="pn"><b>{t.name}</b></div></div></td>
                 <td><GradePill grade={t.grade || 'ambulancier'} /></td>
@@ -180,6 +193,35 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
           </tbody>
         </table>
       </Card>
+
+      {sorted.length > TIMECLOCK_PAGE_SIZE && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 12.5, color: 'var(--ink-400)' }}>
+            {from + 1}–{from + pageRows.length} sur <b style={{ color: 'var(--ink-200)' }}>{sorted.length}</b> service{sorted.length > 1 ? 's' : ''}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              className="btn btn-ghost"
+              onClick={() => setPage(Math.max(1, curPage - 1))}
+              disabled={curPage <= 1}
+              style={{ opacity: curPage <= 1 ? 0.45 : 1, cursor: curPage <= 1 ? 'default' : 'pointer' }}
+            >
+              <Icons.arrowL size={15} /> Précédent
+            </button>
+            <span style={{ fontSize: 13, color: 'var(--ink-300)', whiteSpace: 'nowrap' }}>
+              Page <b style={{ color: 'var(--ink-100)' }}>{curPage}</b> / {pageCount}
+            </span>
+            <button
+              className="btn btn-ghost"
+              onClick={() => setPage(Math.min(pageCount, curPage + 1))}
+              disabled={curPage >= pageCount}
+              style={{ opacity: curPage >= pageCount ? 0.45 : 1, cursor: curPage >= pageCount ? 'default' : 'pointer' }}
+            >
+              Suivant <Icons.chevR size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {editRow && <EditTimeModal row={editRow} onClose={() => setEditRow(null)} onSaved={() => { setEditRow(null); router.refresh() }} />}
     </div>
