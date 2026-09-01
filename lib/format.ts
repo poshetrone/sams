@@ -132,3 +132,21 @@ export function parisWallToInstant(
   if (off2 !== off) inst = guess - off2 // affine sur les bornes de changement d'heure
   return new Date(inst)
 }
+
+/**
+ * Semaine (lundi → dimanche, heure de Paris) contenant l'instant `d`.
+ * Renvoie les bornes en instants UTC : `start` = lundi 00:00, `end` = lundi
+ * suivant 00:00 (exclusive). Le passage heure d'été/hiver est absorbé par
+ * `parisWallToInstant`, donc la semaine peut durer 167 h ou 169 h.
+ */
+export function parisWeekRange(d: Date | string | number = Date.now()): { start: Date; end: Date } {
+  const p = parisParts(toDate(d))
+  // Jour de la semaine ramené à lundi = 0 … dimanche = 6.
+  const dow = (new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay() + 6) % 7
+  const mon = new Date(Date.UTC(p.year, p.month - 1, p.day - dow))
+  const nextMon = new Date(Date.UTC(p.year, p.month - 1, p.day - dow + 7))
+  return {
+    start: parisWallToInstant(mon.getUTCFullYear(), mon.getUTCMonth() + 1, mon.getUTCDate(), 0, 0),
+    end: parisWallToInstant(nextMon.getUTCFullYear(), nextMon.getUTCMonth() + 1, nextMon.getUTCDate(), 0, 0),
+  }
+}

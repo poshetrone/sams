@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { Card, GradePill, SecTitle } from '@/components/ui'
 import Modal from '@/components/Modal'
-import { initialsOf, parisDate, parisHM } from '@/lib/format'
+import { initialsOf, parisDate, parisHM, parisWallToInstant, parisWeekRange } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
 import { startShift, endShift, updateTime, deleteTime } from '@/lib/actions/timeclock'
 import type { Timeclock } from '@/lib/types'
@@ -30,6 +30,38 @@ const startHM = (t: Timeclock) => (t.start_at ? parisHM(t.start_at) : t.start ||
 const endHM = (t: Timeclock) => (t.end_at ? parisHM(t.end_at) : t.end)
 const dayOf = (t: Timeclock) => (t.start_at ? parisDate(t.start_at) : t.date || '')
 
+/** Instant (ms) de prise de service, reconstruit depuis les champs texte si besoin. */
+const startMs = (t: Timeclock) => {
+  if (t.start_at) return new Date(t.start_at).getTime()
+  const [d, mo, y] = (t.date || '').split('/').map(Number)
+  const [h, mi] = (t.start || '').split(':').map(Number)
+  return y && mo && d ? parisWallToInstant(y, mo, d, h || 0, mi || 0).getTime() : NaN
+}
+
+/** Minutes d'une ligne — le service en cours est compté jusqu'à maintenant. */
+const minutesOf = (t: Timeclock) =>
+  isOpen(t) ? Math.max(0, Math.round((Date.now() - startMs(t)) / 60000)) : t.minutes
+
+type WeekRow = { key: string; name: string; grade: string; shifts: number; minutes: number; open: boolean }
+
+/** Cumul par employé des services démarrés dans la semaine, du plus au moins chargé. */
+function weekTotals(rows: Timeclock[], from: number, to: number): WeekRow[] {
+  const by = new Map<string, WeekRow>()
+  for (const t of rows) {
+    const ms = startMs(t)
+    if (!(ms >= from && ms < to)) continue
+    const key = t.member_id || t.name || t.id
+    const cur =
+      by.get(key) ||
+      { key, name: t.name || '—', grade: t.grade || 'ambulancier', shifts: 0, minutes: 0, open: false }
+    cur.shifts += 1
+    cur.minutes += minutesOf(t)
+    cur.open = cur.open || isOpen(t)
+    by.set(key, cur)
+  }
+  return Array.from(by.values()).sort((a, b) => b.minutes - a.minutes)
+}
+
 export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] }) {
   const router = useRouter()
   const { member, isAdmin: isAdminGrade, canEdit } = useApp()
@@ -54,6 +86,13 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
   const onDuty = timeclock.filter((t) => isOpen(t))
   const today = parisDate(Date.now())
   const totalToday = timeclock.filter((t) => dayOf(t) === today && !isOpen(t)).reduce((s, t) => s + t.minutes, 0)
+  const week = parisWeekRange(Date.now())
+  const weekRows = weekTotals(timeclock, week.start.getTime(), week.end.getTime())
+  const weekTotal = weekRows.reduce((s, r) => s + r.minutes, 0)
+  const myWeekMin = timeclock
+    .filter((t) => t.member_id === member.id && startMs(t) >= week.start.getTime() && startMs(t) < week.end.getTime())
+    .reduce((s, t) => s + minutesOf(t), 0)
+  const weekLabel = `${parisDate(week.start)} → ${parisDate(week.end.getTime() - 86400000)}`
 
   const start = async () => { setBusy(true); await startShift(); setBusy(false); router.refresh() }
   const end = async () => { if (!myOpen) return; setBusy(true); await endShift(myOpen.id); setBusy(false); router.refresh() }
@@ -62,7 +101,7 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
 
   return (
     <div className="view-anim">
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 24 }}>
+      <div className="kpi-grid pt-kpis" style={{ marginBottom: 24 }}>
         <div className={`pt-clockcard ${myOpen ? 'on' : ''}`}>
           <div className="ptc-left">
             <div className="ptc-av">{initialsOf(member.name)}</div>
@@ -81,7 +120,35 @@ export default function PointeuseView({ timeclock }: { timeclock: Timeclock[] })
         </div>
         <Card className="kpi"><div className="kpi-ico"><Icons.pulse size={20} /></div><div className="label">En service maintenant</div><div className="val">{onDuty.length}</div></Card>
         <Card className="kpi"><div className="kpi-ico"><Icons.clock size={20} /></div><div className="label">Heures cumulées aujourd&apos;hui</div><div className="val" style={{ fontSize: 32 }}>{fmtDur(totalToday)}</div></Card>
+        <Card className="kpi"><div className="kpi-ico"><Icons.calendar size={20} /></div><div className="label">Mes heures cette semaine</div><div className="val" style={{ fontSize: 32 }}>{fmtDur(myWeekMin)}</div></Card>
       </div>
+
+      <SecTitle action={<span style={{ fontSize: 12.5, color: 'var(--ink-400)', fontWeight: 600, whiteSpace: 'nowrap' }}>{weekLabel} · total {fmtDur(weekTotal)}</span>}>
+        Cumul de la semaine
+      </SecTitle>
+      <Card style={{ overflowX: 'auto', marginBottom: 24 }}>
+        <table className="tbl" style={{ minWidth: 560 }}>
+          <thead>
+            <tr><th>Employé</th><th>Grade</th><th style={{ textAlign: 'right' }}>Services</th><th style={{ textAlign: 'right' }}>Total semaine</th></tr>
+          </thead>
+          <tbody>
+            {weekRows.map((r) => (
+              <tr key={r.key}>
+                <td>
+                  <div className="person">
+                    <div className="av-sm">{initialsOf(r.name)}</div>
+                    <div className="pn"><b>{r.name}</b>{r.open && <span>service en cours</span>}</div>
+                  </div>
+                </td>
+                <td><GradePill grade={r.grade} /></td>
+                <td style={{ textAlign: 'right', color: 'var(--ink-300)' }}>{r.shifts}</td>
+                <td style={{ textAlign: 'right', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--gold-300)' }}>{fmtDur(r.minutes)}</td>
+              </tr>
+            ))}
+            {weekRows.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 40 }}>Aucun service cette semaine.</td></tr>}
+          </tbody>
+        </table>
+      </Card>
 
       <SecTitle>Historique des services</SecTitle>
       <Card style={{ overflowX: 'auto' }}>
