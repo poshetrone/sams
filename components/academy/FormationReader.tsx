@@ -1,8 +1,10 @@
 import { Card } from '@/components/ui'
+import { Icons } from '@/components/Icons'
+import { fmtFileSize } from '@/lib/format'
 import type { AcademyFormation } from '@/lib/types'
 
 /**
- * Rendu d'une formation (sous-titre + chapitres numérotés).
+ * Rendu d'une formation (sous-titre + chapitres numérotés + pièces jointes).
  * Partagé par la page du panel et la page publique `/formation`, pour que le
  * contenu s'affiche à l'identique des deux côtés.
  */
@@ -37,7 +39,54 @@ export default function FormationReader({ formation }: { formation: AcademyForma
             )}
           </Card>
         ))}
-        {formation.chapters.length === 0 && (
+        {formation.documents?.length > 0 && (
+          <Card className="card-pad">
+            <div
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                letterSpacing: 1,
+                color: 'var(--gold-300)',
+                marginBottom: 10,
+              }}
+            >
+              DOCUMENTS
+            </div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {formation.documents.map((d) => (
+                <a
+                  key={d.key}
+                  href={d.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={d.name}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '9px 12px',
+                    borderRadius: 9,
+                    border: '1px solid var(--navy-line-soft)',
+                    background: 'var(--navy-800)',
+                    color: 'var(--ink-200)',
+                    fontSize: 13.5,
+                  }}
+                >
+                  <Icons.file size={15} style={{ color: 'var(--gold-400)', flex: '0 0 15px' }} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.name}
+                  </span>
+                  <span style={{ fontSize: 11.5, color: 'var(--ink-500)', whiteSpace: 'nowrap' }}>
+                    {fmtFileSize(d.size)}
+                  </span>
+                  <Icons.download size={15} style={{ color: 'var(--ink-400)', flex: '0 0 15px' }} />
+                </a>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {formation.chapters.length === 0 && !formation.documents?.length && (
           <Card style={{ textAlign: 'center', color: 'var(--ink-500)', padding: 30 }}>
             Cette formation n&apos;a pas encore de contenu.
           </Card>

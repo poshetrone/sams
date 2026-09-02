@@ -1,7 +1,7 @@
 'use server'
 import { apiPost, apiDelete } from '@/lib/api/client'
 import { revalidatePath } from 'next/cache'
-import type { AcademyChapter } from '@/lib/types'
+import type { AcademyChapter, AcademyDocument } from '@/lib/types'
 
 export interface AcademyFormationInput {
   id?: string
@@ -10,6 +10,7 @@ export interface AcademyFormationInput {
   subtitle?: string | null
   question?: string | null
   chapters: AcademyChapter[]
+  documents?: AcademyDocument[]
 }
 
 type Result = { ok: boolean; error?: string }

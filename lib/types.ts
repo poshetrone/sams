@@ -209,6 +209,15 @@ export interface AcademyChapter {
   items: string[]
 }
 
+/** Pièce jointe d'une formation : fichier téléversé dans Storage. */
+export interface AcademyDocument {
+  key: string
+  name: string
+  url: string
+  mime: string | null
+  size: number | null
+}
+
 export interface AcademyFormation {
   id: string
   ord: number
@@ -216,6 +225,8 @@ export interface AcademyFormation {
   title: string
   subtitle: string | null
   chapters: AcademyChapter[]
+  /** Pièces jointes proposées au téléchargement (PDF, images…). */
+  documents: AcademyDocument[]
   /** Mise en situation : question ouverte posée au stagiaire. */
   question: string | null
   created_at?: string | null

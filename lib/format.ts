@@ -150,3 +150,11 @@ export function parisWeekRange(d: Date | string | number = Date.now()): { start:
     end: parisWallToInstant(nextMon.getUTCFullYear(), nextMon.getUTCMonth() + 1, nextMon.getUTCDate(), 0, 0),
   }
 }
+
+/** Taille de fichier lisible (1 chiffre après la virgule à partir du Mo). */
+export const fmtFileSize = (bytes: number | null | undefined): string => {
+  if (!bytes || bytes < 0) return ''
+  if (bytes < 1024) return `${bytes} o`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+}

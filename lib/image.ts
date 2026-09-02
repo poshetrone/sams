@@ -78,3 +78,24 @@ export async function handleImageUpload(
   const url = await uploadImage(file, folder, opts)
   if (url) cb(url)
 }
+
+/** Poids maximum d'un fichier téléversé — le JSON de l'API plafonne à 12 Mo. */
+export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+/**
+ * Upload d'un fichier quelconque (PDF, image…) dans Storage (`media/<folder>`).
+ * Contrairement à `uploadImage`, le fichier part tel quel : une pièce jointe
+ * doit garder ses octets et son extension d'origine. Renvoie l'URL publique,
+ * ou null si le fichier est trop lourd / l'upload échoue.
+ */
+export async function uploadFile(file: File, folder: string): Promise<string | null> {
+  if (file.size > MAX_UPLOAD_BYTES) return null
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result as string)
+    r.onerror = reject
+    r.readAsDataURL(file)
+  })
+  const res = await uploadToMedia(folder, file.name, file.type, dataUrl)
+  return res.ok ? res.url ?? null : null
+}

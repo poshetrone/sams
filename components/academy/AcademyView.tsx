@@ -1,11 +1,12 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icons } from '@/components/Icons'
 import { Card, GradePill, SecTitle } from '@/components/ui'
 import Modal from '@/components/Modal'
-import { initialsOf } from '@/lib/format'
+import { fmtFileSize, initialsOf } from '@/lib/format'
 import { useApp } from '@/lib/app-context'
+import { uploadFile, MAX_UPLOAD_BYTES } from '@/lib/image'
 import {
   saveFormation,
   deleteFormation,
@@ -14,7 +15,7 @@ import {
   deleteAnswer,
 } from '@/lib/actions/academy'
 import FormationReader from './FormationReader'
-import type { AcademyAnswer, AcademyChapter, AcademyFormation } from '@/lib/types'
+import type { AcademyAnswer, AcademyChapter, AcademyDocument, AcademyFormation } from '@/lib/types'
 
 type Tab = 'parcours' | 'formations' | 'reponses'
 
@@ -442,10 +443,47 @@ function FormationModal({
   const [subtitle, setSubtitle] = useState(row?.subtitle || '')
   const [question, setQuestion] = useState(row?.question || '')
   const [chapters, setChapters] = useState<AcademyChapter[]>(row?.chapters?.length ? row.chapters : [newChapter()])
+  const [documents, setDocuments] = useState<AcademyDocument[]>(row?.documents || [])
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [docError, setDocError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const patch = (i: number, p: Partial<AcademyChapter>) =>
     setChapters((cs) => cs.map((c, k) => (k === i ? { ...c, ...p } : c)))
+
+  const patchDoc = (key: string, p: Partial<AcademyDocument>) =>
+    setDocuments((ds) => ds.map((d) => (d.key === key ? { ...d, ...p } : d)))
+
+  // Le fichier part dans Storage tout de suite : on ne garde que son URL.
+  const onPickFiles = async (files: FileList | null) => {
+    if (!files?.length) return
+    setDocError(null)
+    setUploading(true)
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setDocError(`« ${file.name} » dépasse ${fmtFileSize(MAX_UPLOAD_BYTES)}.`)
+        continue
+      }
+      const url = await uploadFile(file, 'academy')
+      if (!url) {
+        setDocError(`Échec du téléversement de « ${file.name} ».`)
+        continue
+      }
+      setDocuments((ds) => [
+        ...ds,
+        {
+          key: Math.random().toString(36).slice(2, 10),
+          name: file.name,
+          url,
+          mime: file.type || null,
+          size: file.size,
+        },
+      ])
+    }
+    setUploading(false)
+    if (fileRef.current) fileRef.current.value = ''
+  }
 
   const save = async () => {
     if (!title.trim()) return
@@ -457,6 +495,7 @@ function FormationModal({
       subtitle: subtitle.trim() || null,
       question: question.trim() || null,
       chapters,
+      documents,
     })
     setBusy(false)
     onSaved()
@@ -534,6 +573,67 @@ function FormationModal({
               />
             </Card>
           ))}
+        </div>
+
+        <SecTitle
+          action={
+            <button className="btn btn-ghost" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Icons.upload size={14} /> {uploading ? 'Téléversement…' : 'Ajouter un document'}
+            </button>
+          }
+        >
+          Documents
+        </SecTitle>
+
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          style={{ display: 'none' }}
+          onChange={(e) => onPickFiles(e.target.files)}
+        />
+
+        <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+          {documents.map((d) => (
+            <Card key={d.key} style={{ background: 'var(--navy-800)', padding: '10px 12px' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Icons.file size={16} style={{ color: 'var(--gold-400)', flex: '0 0 16px' }} />
+                <input
+                  className="tinput"
+                  value={d.name}
+                  onChange={(e) => patchDoc(d.key, { name: e.target.value })}
+                  placeholder="Nom affiché du document"
+                />
+                <span style={{ fontSize: 11.5, color: 'var(--ink-500)', whiteSpace: 'nowrap' }}>
+                  {fmtFileSize(d.size)}
+                </span>
+                <a
+                  className="icon-btn"
+                  href={d.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ width: 30, height: 30, flex: '0 0 30px' }}
+                  title="Ouvrir"
+                >
+                  <Icons.eye size={13} />
+                </a>
+                <div
+                  className="icon-btn"
+                  style={{ width: 30, height: 30, flex: '0 0 30px' }}
+                  title="Retirer le document"
+                  onClick={() => setDocuments((ds) => ds.filter((x) => x.key !== d.key))}
+                >
+                  <Icons.trash size={13} />
+                </div>
+              </div>
+            </Card>
+          ))}
+          {documents.length === 0 && !uploading && (
+            <div style={{ fontSize: 12.5, color: 'var(--ink-500)' }}>
+              Aucun document joint. Les stagiaires en verront la liste sous les chapitres.
+            </div>
+          )}
+          {docError && <div style={{ fontSize: 12.5, color: 'var(--crit)' }}>{docError}</div>}
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
