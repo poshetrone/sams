@@ -16,7 +16,7 @@ export default function FormationReader({ formation }: { formation: AcademyForma
       )}
       <div style={{ display: 'grid', gap: 14 }}>
         {formation.chapters.map((c, i) => (
-          <Card key={c.key}>
+          <Card key={c.key} className="card-pad">
             <div style={{ display: 'flex', gap: 12, alignItems: 'baseline', marginBottom: 8 }}>
               <span style={{ color: 'var(--gold-400)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
                 {String(i + 1).padStart(2, '0')}

@@ -82,7 +82,7 @@ export default function PublicAcademy({ formations }: { formations: AcademyForma
             <SecTitle>{current.title}</SecTitle>
             <FormationReader formation={current} />
 
-            <Card style={{ marginTop: 18, background: 'var(--navy-800)' }}>
+            <Card className="card-pad" style={{ marginTop: 18, background: 'var(--navy-800)' }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 1, color: 'var(--gold-300)', marginBottom: 8 }}>
                 VALIDATION DE L&apos;ÉTAPE
               </div>

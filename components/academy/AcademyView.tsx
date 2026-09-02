@@ -318,7 +318,7 @@ function ParcoursTab({
         </SecTitle>
         <FormationReader formation={current} />
 
-        <Card style={{ marginTop: 18, background: 'var(--navy-800)' }}>
+        <Card className="card-pad" style={{ marginTop: 18, background: 'var(--navy-800)' }}>
           <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 1, color: 'var(--gold-300)', marginBottom: 8 }}>
             VALIDATION DE L&apos;ÉTAPE
           </div>
@@ -498,7 +498,7 @@ function FormationModal({
 
         <div style={{ display: 'grid', gap: 12, marginBottom: 18 }}>
           {chapters.map((c, i) => (
-            <Card key={c.key} style={{ background: 'var(--navy-800)' }}>
+            <Card key={c.key} className="card-pad" style={{ background: 'var(--navy-800)' }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
                 <span style={{ color: 'var(--gold-400)', fontFamily: 'var(--font-display)' }}>
                   {String(i + 1).padStart(2, '0')}
